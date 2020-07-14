@@ -1,7 +1,12 @@
 from datetime import datetime
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, ValidationError
+from customValidator import customAnyOf, phoneAnyOf
+
+genreValues = ['Alternative',  'Blues', 'Classical', 'Country', 'Electronic', 'Folk', 'Funk', 'Hip-Hop', 'Heavy Metal', 'Instrumental', 'Jazz',
+            'Musical Theatre', 'Pop', 'Punk', 'R&B', 'Reggae', 'Rock n Roll', 'Soul', 'Other']
+phoneValues = ['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -83,14 +88,15 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        # TODO implement validation logic for state
+        'phone', validators = [DataRequired(), phoneAnyOf(phoneValues)]
     )
     image_link = StringField(
         'image_link'
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
-        'genres', validators=[DataRequired()],
+        'genres', validators=[DataRequired(), customAnyOf(genreValues)],
         choices=[
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),
@@ -182,14 +188,14 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone'
+        'phone', validators = [DataRequired(), phoneAnyOf(phoneValues)]
     )
     image_link = StringField(
         'image_link'
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
-        'genres', validators=[DataRequired()],
+        'genres', validators=[DataRequired(), customAnyOf(genreValues)],
         choices=[
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),

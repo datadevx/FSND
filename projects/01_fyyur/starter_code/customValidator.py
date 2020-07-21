@@ -15,11 +15,10 @@ def customAnyOf(values):
   return _validate
 
 
-
 def phoneAnyOf(phoneValues):
-  message = 'Invalid value, must be one of: {0}.'.format( ','.join(phoneValues) )
+  message = 'Invalid value, must be one of: {0}.'.format( ','.join(phoneValues))
   def _validate(form, field):
-    phoneMatch  = re.search(r"[0-9]\d\d-[0-9]\d\d-[0-9]\d\d\d", field.data)
+    phoneMatch  = re.fullmatch(r"[0-9]\d\d-[0-9]\d\d-[0-9]\d\d\d", field.data)
     if not phoneMatch:
         raise ValidationError(message)
   return _validate

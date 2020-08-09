@@ -1,0 +1,2 @@
+FLASK_APP=thecrew.py
+FLASK_ENV=development

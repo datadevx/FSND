@@ -23,3 +23,11 @@ def make_shell_context():
         'Gender': Gender,
         'movies_actors': movies_actors
     }
+
+if __name__ == "__main__":
+    app.run(
+        use_reloader=False,
+        use_debugger=False,
+        passthrough_errors=True,
+        host='0.0.0.0'
+    )

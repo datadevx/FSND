@@ -21,6 +21,14 @@ class Gender(BaseModel):
     def __repr__(self):
         return f'<Gender {self.name}>'
 
+    @staticmethod
+    def insert_genders():
+        db.session.add_all([
+            Gender(name='Female'),
+            Gender(name='Male'),
+            Gender(name='Another')])
+        db.session.commit()
+
 
 movies_actors = db.Table('movies_actors',
                          db.Column('movie_id', db.Integer, db.ForeignKey(
@@ -39,6 +47,23 @@ class Actor(BaseModel):
 
     def __repr__(self):
         return f'<Actor {self.full_name}>'
+
+    @staticmethod
+    def from_json(json_actor):
+        actor = Actor(age=json_actor['age'],
+                      full_name=json_actor['full_name'],
+                      gender=Gender.query.filter_by(
+                          name=json_actor['gender']).first())
+        db.session.add(actor)
+        return actor
+
+    def to_json(self):
+        return {
+            'age': self.age,
+            'full_name': self.full_name,
+            'gender': self.gender.name,
+            'uuid': self.uuid
+        }
 
 
 class Movie(BaseModel):

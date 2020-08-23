@@ -17,10 +17,10 @@ def get_movies():
                    'totalPages': pagination.pages,
                    'page': pagination.page}
     if pagination.has_prev:
-        result_dict['prev_link'] = url_for(
+        result_dict['prevLink'] = url_for(
             'api.get_movies', page=pagination.prev_num)
     if pagination.has_next:
-        result_dict['next_link'] = url_for(
+        result_dict['nextLink'] = url_for(
             'api.get_movies', page=pagination.next_num)
 
     return jsonify(result_dict)
@@ -33,7 +33,7 @@ def get_movie(id):
 
 
 @bp.route('/movies', methods=['POST'])
-def new_movie():
+def create_movie():
     movie = Movie.new_from_json(request.json)
     db.session.commit()
     return jsonify(movie.to_json()), 201, \
@@ -41,7 +41,7 @@ def new_movie():
 
 
 @bp.route('/movies/<string:id>', methods=['PATCH'])
-def edit_movie(id):
+def update_movie(id):
     movie = Movie.query.filter_by(uuid=id).first_or_404()
     movie.update_from_json(request.json)
     db.session.commit()

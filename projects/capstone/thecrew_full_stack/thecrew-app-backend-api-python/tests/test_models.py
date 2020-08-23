@@ -130,6 +130,180 @@ class ActorCrudTestCase(BaseModelTestCase):
 
         self.assertFalse(Actor.query.all())
 
+    def get_json_actor(self, *del_args, **replace_kwargs):
+        if not Gender.query.all():
+            Gender.insert_genders()
+        json_actor = {
+            'age': 23,
+            'fullName': 'Sanjana Sanghi',
+            'gender': 'Female'}
+        for arg in del_args:
+            if arg in json_actor:
+                del json_actor[arg]
+        for k in replace_kwargs:
+            json_actor[k] = replace_kwargs[k]
+        return json_actor
+
+    def test_can_create_new_from_json(self):
+        json_actor = self.get_json_actor()
+        actor = Actor.new_from_json(json_actor)
+        db.session.commit()
+
+        self.assertIsNotNone(actor)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=str(actor.uuid)).first().full_name, 'Sanjana Sanghi')
+        self.assertEqual(Actor.query.filter_by(
+            uuid=str(actor.uuid)).first().age, 23)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=str(actor.uuid)).first().gender.name, 'Female')
+
+    def test_cannot_create_new_from_json(self):
+        # test gender is required
+        json_actor = self.get_json_actor('gender')
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('gender', 'missing'))
+
+        # test full_name is required
+        json_actor = self.get_json_actor('fullName')
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('fullName', 'missing'))
+
+        # test age is required
+        json_actor = self.get_json_actor('age')
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('age', 'missing'))
+
+        # test all required
+        json_actor = self.get_json_actor(*{'gender', 'fullName', 'age'})
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 3)
+        self.assertTrue(validation_error.get_error('gender', 'missing'))
+        self.assertTrue(validation_error.get_error('fullName', 'missing'))
+        self.assertTrue(validation_error.get_error('age', 'missing'))
+
+        # test gender not found
+        json_actor = self.get_json_actor(gender='F')
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('gender', 'unprocessable'))
+        self.assertIn('not found', validation_error.get_error(
+            'gender', 'unprocessable').description)
+
+        # test duplicated movie
+        json_actor = self.get_json_actor()
+        Actor.new_from_json(json_actor)
+        db.session.commit()
+
+        with self.assertRaises(ValidationsError) as cm:
+            Actor.new_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('custom',
+                                                   'already_exists'))
+        self.assertIn('already exists', validation_error.get_error(
+            'custom', 'already_exists').description)
+
+    def add_from_json_actor(self, *del_args, **replace_kwargs):
+        json_actor = self.get_json_actor(*del_args, **replace_kwargs)
+        actor = Actor.new_from_json(json_actor)
+        db.session.commit()
+        return actor
+
+    def test_can_update_from_json(self):
+        actor = self.add_from_json_actor()
+
+        # update all attributes
+        json_actor = actor.to_json()
+        json_actor['fullName'] = 'Sanjana Sanghi Jr.'
+        json_actor['age'] = 24
+        json_actor['gender'] = 'Another'
+        actor.update_from_json(json_actor)
+        db.session.commit()
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().full_name, 'Sanjana Sanghi Jr.')
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().age, 24)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().gender.name, 'Another')
+
+        # update full_name attributes
+        actor.update_from_json({'fullName': 'Sanjana S. Junior'})
+        db.session.commit()
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().full_name, 'Sanjana S. Junior')
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().age, 24)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().gender.name, 'Another')
+
+        # update age attributes
+        actor.update_from_json({'age': 30})
+        db.session.commit()
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().full_name, 'Sanjana S. Junior')
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().age, 30)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().gender.name, 'Another')
+
+        # update gender attributes
+        actor.update_from_json({'gender': 'Female'})
+        db.session.commit()
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().full_name, 'Sanjana S. Junior')
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().age, 30)
+        self.assertEqual(Actor.query.filter_by(
+            uuid=json_actor['uuid']).first().gender.name, 'Female')
+
+    def test_cannot_update_from_json(self):
+        actor = self.add_from_json_actor()
+
+        # test gender not found
+        json_actor = actor.to_json()
+        json_actor['gender'] = 'F'
+        with self.assertRaises(ValidationsError) as cm:
+            actor.update_from_json(json_actor)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('gender', 'unprocessable'))
+        self.assertIn('not found', validation_error.get_error(
+            'gender', 'unprocessable').description)
+
+        # test duplicated actor
+        self.add_from_json_actor(fullName='Sanjana Sanghi Jr.')
+        json_movie = actor.to_json()
+        json_movie['fullName'] = 'Sanjana Sanghi Jr.'
+        with self.assertRaises(ValidationsError) as cm:
+            actor.update_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('custom',
+                                                   'already_exists'))
+        self.assertIn('already exists', validation_error.get_error(
+            'custom', 'already_exists').description)
+
 
 class MovieCrudTestCase(BaseModelTestCase):
     def test_crud(self):
@@ -201,7 +375,7 @@ class MovieCrudTestCase(BaseModelTestCase):
                       gender=Gender.query.filter_by(name='Male').first())]
             db.session.add_all(actors)
             db.session.commit()
-        json_movie = {'title': 'Dil Bechara', 'release_date': '2020-07-24',
+        json_movie = {'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
                       'actors': [a.to_json() for a in actors]}
         for arg in del_args:
             if arg in json_movie:
@@ -237,13 +411,13 @@ class MovieCrudTestCase(BaseModelTestCase):
         self.assertTrue(validation_error.get_error('title', 'missing'))
 
         # test release_date is required
-        json_movie = self.get_json_movie('release_date')
+        json_movie = self.get_json_movie('releaseDate')
         with self.assertRaises(ValidationsError) as cm:
             Movie.new_from_json(json_movie)
         validation_error = cm.exception
         self.assertTrue(validation_error.has_errors())
         self.assertTrue(len(validation_error.errors), 1)
-        self.assertTrue(validation_error.get_error('release_date', 'missing'))
+        self.assertTrue(validation_error.get_error('releaseDate', 'missing'))
 
         # test actors is required
         json_movie = self.get_json_movie('actors')
@@ -255,14 +429,14 @@ class MovieCrudTestCase(BaseModelTestCase):
         self.assertTrue(validation_error.get_error('actors', 'missing'))
 
         # test all required
-        json_movie = self.get_json_movie(*{'title', 'release_date', 'actors'})
+        json_movie = self.get_json_movie(*{'title', 'releaseDate', 'actors'})
         with self.assertRaises(ValidationsError) as cm:
             Movie.new_from_json(json_movie)
         validation_error = cm.exception
         self.assertTrue(validation_error.has_errors())
         self.assertTrue(len(validation_error.errors), 3)
         self.assertTrue(validation_error.get_error('title', 'missing'))
-        self.assertTrue(validation_error.get_error('release_date', 'missing'))
+        self.assertTrue(validation_error.get_error('releaseDate', 'missing'))
         self.assertTrue(validation_error.get_error('actors', 'missing'))
 
         # test actors is a list and all have uuid
@@ -279,16 +453,16 @@ class MovieCrudTestCase(BaseModelTestCase):
             'actors', 'missing_field').description)
 
         # test valid release date
-        json_movie = self.get_json_movie(release_date='16/08/2020')
+        json_movie = self.get_json_movie(releaseDate='16/08/2020')
         with self.assertRaises(ValidationsError) as cm:
             Movie.new_from_json(json_movie)
         validation_error = cm.exception
         self.assertTrue(validation_error.has_errors())
         self.assertTrue(len(validation_error.errors), 1)
-        self.assertTrue(validation_error.get_error('release_date', 'invalid'))
+        self.assertTrue(validation_error.get_error('releaseDate', 'invalid'))
         self.assertIn(f'format: {self.app.config["DATE_FORMAT"]}',
                       validation_error.get_error(
-                          'release_date', 'invalid').description)
+                          'releaseDate', 'invalid').description)
 
         # test actor not found
         json_movie = self.get_json_movie()
@@ -330,7 +504,7 @@ class MovieCrudTestCase(BaseModelTestCase):
         # update all attributes
         json_movie = movie.to_json()
         json_movie['title'] = 'Dil Bechara 2'
-        json_movie['release_date'] = '2020-07-31'
+        json_movie['releaseDate'] = '2020-07-31'
         json_movie['actors'] = [movie.actors.filter_by(
             full_name='Sanjana Sanghi').first().to_json()]
         movie.update_from_json(json_movie)
@@ -345,9 +519,7 @@ class MovieCrudTestCase(BaseModelTestCase):
             uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
 
         # update title attributes
-        movie.update_from_json({
-            'uuid': json_movie['uuid'],
-            'title': 'Dil Bechara'})
+        movie.update_from_json({'title': 'Dil Bechara'})
         db.session.commit()
         self.assertEqual(Movie.query.filter_by(
             uuid=json_movie['uuid']).first().title, 'Dil Bechara')
@@ -359,9 +531,7 @@ class MovieCrudTestCase(BaseModelTestCase):
             uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
 
         # update release_date attributes
-        movie.update_from_json({
-            'uuid': json_movie['uuid'],
-            'release_date': '2020-07-24'})
+        movie.update_from_json({'releaseDate': '2020-07-24'})
         db.session.commit()
         self.assertEqual(Movie.query.filter_by(
             uuid=json_movie['uuid']).first().title, 'Dil Bechara')
@@ -373,10 +543,8 @@ class MovieCrudTestCase(BaseModelTestCase):
             uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
 
         # update actors attributes
-        movie.update_from_json({
-            'uuid': json_movie['uuid'],
-            'actors': [Actor.query.filter_by(
-                full_name='Saif Ali Khan').first().to_json()]})
+        movie.update_from_json({'actors': [Actor.query.filter_by(
+            full_name='Saif Ali Khan').first().to_json()]})
         db.session.commit()
         self.assertEqual(Movie.query.filter_by(
             uuid=json_movie['uuid']).first().title, 'Dil Bechara')
@@ -392,16 +560,16 @@ class MovieCrudTestCase(BaseModelTestCase):
 
         # test valid release date
         json_movie = movie.to_json()
-        json_movie['release_date'] = '31-07-2020'
+        json_movie['releaseDate'] = '31-07-2020'
         with self.assertRaises(ValidationsError) as cm:
             movie.update_from_json(json_movie)
         validation_error = cm.exception
         self.assertTrue(validation_error.has_errors())
         self.assertTrue(len(validation_error.errors), 1)
-        self.assertTrue(validation_error.get_error('release_date', 'invalid'))
+        self.assertTrue(validation_error.get_error('releaseDate', 'invalid'))
         self.assertIn(f'format: {self.app.config["DATE_FORMAT"]}',
                       validation_error.get_error(
-                          'release_date', 'invalid').description)
+                          'releaseDate', 'invalid').description)
 
         # test actors is a list and all have uuid
         json_movie = movie.to_json()

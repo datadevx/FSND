@@ -52,25 +52,90 @@ class Actor(BaseModel):
     def __repr__(self):
         return f'<Actor {self.full_name}>'
 
-    @staticmethod
-    def from_json(json_actor):
-        # TODO: validation: gender not found
-        # TODO: validation: duplicated, same name, age and gender
-
-        actor = Actor(age=json_actor['age'],
-                      full_name=json_actor['full_name'],
-                      gender=Gender.query.filter_by(
-                          name=json_actor['gender']).first())
-        db.session.add(actor)
-        return actor
-
     def to_json(self):
         return {
             'age': self.age,
-            'full_name': self.full_name,
+            'fullName': self.full_name,
             'gender': self.gender.name,
+            'moviesCount': self.movies.count(),
             'uuid': str(self.uuid)
         }
+
+    def update_from_json(self, json_actor):
+        gender_name = json_actor.get('gender')
+        full_name = json_actor.get('fullName')
+        age = json_actor.get('age')
+
+        validation = ValidationsError('Validation failed')
+
+        gender = None
+        # validation: gender not found
+        if gender_name and gender_name != self.gender.name:
+            gender = Gender.query.filter_by(name=gender_name).first()
+            if not gender:
+                validation.add_error(
+                    'gender', 'unprocessable', 'gender not found')
+
+        # validation: duplicated, same name, age and gender
+        if full_name:
+            filter_full_name = full_name or self.full_name
+            filter_age = age or self.age
+            filter_gender = gender_name or self.gender.name
+            actor_found = Actor.query.filter_by(
+                full_name=filter_full_name, age=filter_age).join(
+                    Gender, Actor.gender).filter(Gender.name == filter_gender
+                                                 ).first()
+            if actor_found:
+                validation.add_error('custom', 'already_exists',
+                                     f'actor {full_name} already exists')
+
+        if validation.has_errors():
+            raise validation
+        if full_name:
+            self.full_name = full_name
+        if age:
+            self.age = age
+        if gender:
+            self.gender = gender
+
+    @staticmethod
+    def new_from_json(json_actor):
+        gender_name = json_actor.get('gender')
+        full_name = json_actor.get('fullName')
+        age = json_actor.get('age')
+
+        validation = ValidationsError('Validation failed')
+        # validate required attributes
+        if not gender_name:
+            validation.add_error('gender', 'missing')
+        if not full_name:
+            validation.add_error('fullName', 'missing')
+        if not age:
+            validation.add_error('age', 'missing')
+
+        gender = None
+        if not validation.has_errors():
+            gender = Gender.query.filter_by(name=gender_name).first()
+
+            # validation: gender not found
+            if not gender:
+                validation.add_error(
+                    'gender', 'unprocessable', 'gender not found')
+
+            # validation: duplicated, same name, age and gender
+            actor_found = Actor.query.filter_by(
+                full_name=full_name, age=age).join(
+                    Gender, Actor.gender).filter(Gender.name == gender_name
+                                                 ).first()
+            if actor_found:
+                validation.add_error('custom', 'already_exists',
+                                     f'actor {full_name} already exists')
+
+        if validation.has_errors():
+            raise validation
+        actor = Actor(age=age, full_name=full_name, gender=gender)
+        db.session.add(actor)
+        return actor
 
 
 class Movie(BaseModel):
@@ -87,14 +152,14 @@ class Movie(BaseModel):
     def to_json(self):
         return {
             'actors': [actor.to_json() for actor in self.actors],
-            'release_date': date_to_str(self.release_date),
+            'releaseDate': date_to_str(self.release_date),
             'title': self.title,
             'uuid': str(self.uuid)
         }
 
     def update_from_json(self, json_movie):
         title = json_movie.get('title')
-        release_date_string = json_movie.get('release_date')
+        release_date_string = json_movie.get('releaseDate')
         actors_json = json_movie.get('actors')
 
         validation = ValidationsError('Validation failed')
@@ -102,7 +167,7 @@ class Movie(BaseModel):
         release_date = str_to_date(release_date_string) \
             if release_date_string else None
         if release_date_string and not release_date:
-            validation.add_error('release_date', 'invalid',
+            validation.add_error('releaseDate', 'invalid',
                                  f'You must use format: '
                                  f'{current_app.config["DATE_FORMAT"]}')
         # validation: actor not found
@@ -144,7 +209,7 @@ class Movie(BaseModel):
     @staticmethod
     def new_from_json(json_movie):
         title = json_movie.get('title')
-        release_date_string = json_movie.get('release_date')
+        release_date_string = json_movie.get('releaseDate')
         actors_json = json_movie.get('actors')
 
         release_date = None
@@ -155,7 +220,7 @@ class Movie(BaseModel):
         if not title:
             validation.add_error('title', 'missing')
         if not release_date_string:
-            validation.add_error('release_date', 'missing')
+            validation.add_error('releaseDate', 'missing')
         if not actors_json:
             validation.add_error('actors', 'missing')
         elif not (isinstance(actors_json, list) and
@@ -168,7 +233,7 @@ class Movie(BaseModel):
             release_date = str_to_date(release_date_string)
 
             if not release_date:
-                validation.add_error('release_date', 'invalid',
+                validation.add_error('releaseDate', 'invalid',
                                      f'You must use format: '
                                      f'{current_app.config["DATE_FORMAT"]}')
 

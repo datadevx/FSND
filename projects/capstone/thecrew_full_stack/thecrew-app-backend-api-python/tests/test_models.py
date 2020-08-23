@@ -1,7 +1,10 @@
 import unittest
+import uuid
 from datetime import datetime
 from app import create_app, db
 from app.models import Gender, Actor, Movie
+from app.date import date_to_str
+from app.exceptions import ValidationsError
 
 
 class BaseModelTestCase(unittest.TestCase):
@@ -182,3 +185,260 @@ class MovieCrudTestCase(BaseModelTestCase):
         db.session.commit()
 
         self.assertFalse(Movie.query.all())
+
+    def get_json_movie(self, *del_args, **replace_kwargs):
+        if not Gender.query.all():
+            Gender.insert_genders()
+
+        actors = Actor.query.all()
+        if not actors:
+            actors = [
+                Actor(age=23, full_name='Sanjana Sanghi',
+                      gender=Gender.query.filter_by(name='Female').first()),
+                Actor(age=49, full_name='Saswata Chatterjee',
+                      gender=Gender.query.filter_by(name='Male').first()),
+                Actor(age=49, full_name='Saif Ali Khan',
+                      gender=Gender.query.filter_by(name='Male').first())]
+            db.session.add_all(actors)
+            db.session.commit()
+        json_movie = {'title': 'Dil Bechara', 'release_date': '2020-07-24',
+                      'actors': [a.to_json() for a in actors]}
+        for arg in del_args:
+            if arg in json_movie:
+                del json_movie[arg]
+        for k in replace_kwargs:
+            json_movie[k] = replace_kwargs[k]
+        return json_movie
+
+    def test_can_create_new_from_json(self):
+        json_movie = self.get_json_movie()
+
+        movie = Movie.new_from_json(json_movie)
+        db.session.commit()
+        self.assertIsNotNone(movie)
+        self.assertEqual(Movie.query.filter_by(
+            uuid=str(movie.uuid)).first().title, 'Dil Bechara')
+        self.assertEqual(date_to_str(Movie.query.filter_by(
+            uuid=str(movie.uuid)).first().release_date), '2020-07-24')
+        self.assertEqual(len(Movie.query.filter_by(
+            uuid=str(movie.uuid)).first().actors.all()), 3)
+        self.assertListEqual([a.full_name for a in Movie.query.filter_by(
+            uuid=str(movie.uuid)).first().actors.all()], [
+                'Sanjana Sanghi', 'Saswata Chatterjee', 'Saif Ali Khan'])
+
+    def test_cannot_create_new_from_json(self):
+        # test title is required
+        json_movie = self.get_json_movie('title')
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('title', 'missing'))
+
+        # test release_date is required
+        json_movie = self.get_json_movie('release_date')
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('release_date', 'missing'))
+
+        # test actors is required
+        json_movie = self.get_json_movie('actors')
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('actors', 'missing'))
+
+        # test all required
+        json_movie = self.get_json_movie(*{'title', 'release_date', 'actors'})
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 3)
+        self.assertTrue(validation_error.get_error('title', 'missing'))
+        self.assertTrue(validation_error.get_error('release_date', 'missing'))
+        self.assertTrue(validation_error.get_error('actors', 'missing'))
+
+        # test actors is a list and all have uuid
+        json_movie = self.get_json_movie()
+        json_movie['actors'] = [{k: v for k, v in a.items() if k != 'uuid'}
+                                for a in json_movie['actors']]
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('actors', 'missing_field'))
+        self.assertIn('uuid', validation_error.get_error(
+            'actors', 'missing_field').description)
+
+        # test valid release date
+        json_movie = self.get_json_movie(release_date='16/08/2020')
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('release_date', 'invalid'))
+        self.assertIn(f'format: {self.app.config["DATE_FORMAT"]}',
+                      validation_error.get_error(
+                          'release_date', 'invalid').description)
+
+        # test actor not found
+        json_movie = self.get_json_movie()
+        json_movie['actors'] = [{k: v if k != 'uuid' else str(
+            uuid.uuid4()) for k, v in a.items()} for a in json_movie['actors']]
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('actors', 'unprocessable'))
+        self.assertIn('not found', validation_error.get_error(
+            'actors', 'unprocessable').description)
+
+        # test duplicated movie
+        json_movie = self.get_json_movie()
+        Movie.new_from_json(json_movie)
+        db.session.commit()
+
+        with self.assertRaises(ValidationsError) as cm:
+            Movie.new_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('custom',
+                                                   'already_exists'))
+        self.assertIn('already exists', validation_error.get_error(
+            'custom', 'already_exists').description)
+
+    def add_from_json_movie(self, *del_args, **replace_kwargs):
+        json_movie = self.get_json_movie(*del_args, **replace_kwargs)
+        movie = Movie.new_from_json(json_movie)
+        db.session.commit()
+        return movie
+
+    def test_can_update_from_json(self):
+        movie = self.add_from_json_movie()
+
+        # update all attributes
+        json_movie = movie.to_json()
+        json_movie['title'] = 'Dil Bechara 2'
+        json_movie['release_date'] = '2020-07-31'
+        json_movie['actors'] = [movie.actors.filter_by(
+            full_name='Sanjana Sanghi').first().to_json()]
+        movie.update_from_json(json_movie)
+        db.session.commit()
+        self.assertEqual(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().title, 'Dil Bechara 2')
+        self.assertEqual(date_to_str(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().release_date), '2020-07-31')
+        self.assertEqual(len(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()), 1)
+        self.assertListEqual([a.full_name for a in Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
+
+        # update title attributes
+        movie.update_from_json({
+            'uuid': json_movie['uuid'],
+            'title': 'Dil Bechara'})
+        db.session.commit()
+        self.assertEqual(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().title, 'Dil Bechara')
+        self.assertEqual(date_to_str(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().release_date), '2020-07-31')
+        self.assertEqual(len(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()), 1)
+        self.assertListEqual([a.full_name for a in Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
+
+        # update release_date attributes
+        movie.update_from_json({
+            'uuid': json_movie['uuid'],
+            'release_date': '2020-07-24'})
+        db.session.commit()
+        self.assertEqual(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().title, 'Dil Bechara')
+        self.assertEqual(date_to_str(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().release_date), '2020-07-24')
+        self.assertEqual(len(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()), 1)
+        self.assertListEqual([a.full_name for a in Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()], ['Sanjana Sanghi'])
+
+        # update actors attributes
+        movie.update_from_json({
+            'uuid': json_movie['uuid'],
+            'actors': [Actor.query.filter_by(
+                full_name='Saif Ali Khan').first().to_json()]})
+        db.session.commit()
+        self.assertEqual(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().title, 'Dil Bechara')
+        self.assertEqual(date_to_str(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().release_date), '2020-07-24')
+        self.assertEqual(len(Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()), 1)
+        self.assertListEqual([a.full_name for a in Movie.query.filter_by(
+            uuid=json_movie['uuid']).first().actors.all()], ['Saif Ali Khan'])
+
+    def test_cannot_update_from_json(self):
+        movie = self.add_from_json_movie()
+
+        # test valid release date
+        json_movie = movie.to_json()
+        json_movie['release_date'] = '31-07-2020'
+        with self.assertRaises(ValidationsError) as cm:
+            movie.update_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('release_date', 'invalid'))
+        self.assertIn(f'format: {self.app.config["DATE_FORMAT"]}',
+                      validation_error.get_error(
+                          'release_date', 'invalid').description)
+
+        # test actors is a list and all have uuid
+        json_movie = movie.to_json()
+        json_movie['actors'] = [{k: v for k, v in a.items() if k != 'uuid'}
+                                for a in json_movie['actors']]
+        with self.assertRaises(ValidationsError) as cm:
+            movie.update_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('actors', 'missing_field'))
+        self.assertIn('uuid', validation_error.get_error(
+            'actors', 'missing_field').description)
+
+        # test actor not found
+        json_movie = movie.to_json()
+        json_movie['actors'] = [{k: v if k != 'uuid' else str(
+            uuid.uuid4()) for k, v in a.items()} for a in json_movie['actors']]
+        with self.assertRaises(ValidationsError) as cm:
+            movie.update_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('actors', 'unprocessable'))
+        self.assertIn('not found', validation_error.get_error(
+            'actors', 'unprocessable').description)
+
+        # test duplicated movie
+        self.add_from_json_movie(title='Dil Bechara 2')
+        json_movie = movie.to_json()
+        json_movie['title'] = 'Dil Bechara 2'
+        with self.assertRaises(ValidationsError) as cm:
+            movie.update_from_json(json_movie)
+        validation_error = cm.exception
+        self.assertTrue(validation_error.has_errors())
+        self.assertTrue(len(validation_error.errors), 1)
+        self.assertTrue(validation_error.get_error('custom',
+                                                   'already_exists'))
+        self.assertIn('already exists', validation_error.get_error(
+            'custom', 'already_exists').description)

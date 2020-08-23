@@ -2,7 +2,7 @@ from flask import jsonify, request, current_app
 from flask.helpers import url_for
 from app import db
 from app.api import bp
-from app.models import Actor, Gender
+from app.models import Actor
 
 
 @bp.route('/actors')
@@ -20,6 +20,12 @@ def get_actors():
     if pagination.has_next:
         next = url_for('api.get_actors', page=pagination.next_num)
 
+    #TODO: Fix prev and next returning None, they need to be removed from
+    # the response
+    #TODO: rename movies and standardize it to objects Naming
+    #TODO: rename count and standardize it to objects totalCount
+    #TODO: include page
+    #TODO: include totalPages
     return jsonify({
         'actors': [actor.to_json() for actor in actors],
         'prev': prev,

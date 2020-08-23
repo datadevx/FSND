@@ -15,4 +15,4 @@ def after_request(response):
     return response
 
 
-from app.api import actors
+from app.api import actors, movies

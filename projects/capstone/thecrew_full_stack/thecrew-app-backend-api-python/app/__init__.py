@@ -18,7 +18,8 @@ def create_app(config_name):
     cors.init_app(app, resources={r'/api/*': {'origins': '*'}})
 
     from app.api import bp as api_blueprint
-    app.register_blueprint(api_blueprint, url_prefix='/api/v1')
+    app.register_blueprint(api_blueprint,
+                           url_prefix=f'/api/{app.config["API_VERSION"]}')
 
     return app
 

@@ -13,6 +13,10 @@ class APITestCase(unittest.TestCase):
         db.create_all()
         Gender.insert_genders()
         self.client = self.app.test_client()
+        self.endpoints = {
+            'actors': f'/api/{self.app.config["API_VERSION"]}/actors',
+            'movies': f'/api/{self.app.config["API_VERSION"]}/movies'
+        }
 
     def tearDown(self):
         db.session.remove()
@@ -28,7 +32,7 @@ class APITestCase(unittest.TestCase):
     def test_crud_actors(self):
         # add a actor
         response = self.client.post(
-            '/api/v1/actors',
+            self.endpoints['actors'],
             headers=self.get_api_headers(),
             data=json.dumps({
                 'age': 23, 'gender': 'Female',
@@ -59,7 +63,7 @@ class APITestCase(unittest.TestCase):
 
         # get actors
         response = self.client.get(
-            '/api/v1/actors',
+            self.endpoints['actors'],
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 200)
         json_response = response.json
@@ -88,9 +92,18 @@ class APITestCase(unittest.TestCase):
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 204)
 
+    def test_methods_not_allowed_for_actors(self):
+        response = self.client.post(
+            self.endpoints['actors'],
+            headers=self.get_api_headers(),
+            data=json.dumps({
+                'age': 23, 'gender': 'Female',
+                'fullName': 'Sanjana Sanghi'}))
+        url_actor = response.headers.get('Location')
+
         # put not allowed
         response = self.client.put(
-            '/api/v1/actors',
+            self.endpoints['actors'],
             headers=self.get_api_headers(),
             data=json.dumps({
                 'age': 23, 'gender': 'Female',
@@ -119,7 +132,7 @@ class APITestCase(unittest.TestCase):
 
         # patch all not allowed
         response = self.client.patch(
-            '/api/v1/actors',
+            self.endpoints['actors'],
             headers=self.get_api_headers(),
             data=json.dumps({'age': 24}))
         self.assertEqual(response.status_code, 405)
@@ -127,10 +140,47 @@ class APITestCase(unittest.TestCase):
 
         # delete all not allowed
         response = self.client.patch(
-            '/api/v1/actors',
+            self.endpoints['actors'],
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 405)
         self.assertIsNone(response.json)
+
+    def add_actor(self):
+        actor = Actor(age=23, full_name='Sanjana Sanghi',
+                      gender=Gender.query.filter_by(name='Female').first())
+        db.session.add(actor)
+        db.session.commit()
+
+    def test_cannot_get_actor_with_int_id(self):
+        self.add_actor()
+
+        response = self.client.get(
+            self.endpoints['actors'] + '/1',
+            headers=self.get_api_headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])
+
+    def test_cannot_patch_actor_with_int_id(self):
+        self.add_actor()
+
+        response = self.client.patch(
+            self.endpoints['actors'] + '/1',
+            headers=self.get_api_headers(),
+            data=json.dumps({'age': 24}))
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])
+
+    def test_cannot_delete_actor_with_int_id(self):
+        self.add_actor()
+
+        response = self.client.delete(
+            self.endpoints['actors'] + '/1',
+            headers=self.get_api_headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])
 
     def test_crud_movies(self):
         # add a movie
@@ -146,7 +196,7 @@ class APITestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-            '/api/v1/movies',
+            self.endpoints['movies'],
             headers=self.get_api_headers(),
             data=json.dumps({
                 'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
@@ -171,7 +221,7 @@ class APITestCase(unittest.TestCase):
 
         # get movies
         response = self.client.get(
-            '/api/v1/movies',
+            self.endpoints['movies'],
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 200)
         json_response = response.json
@@ -201,9 +251,29 @@ class APITestCase(unittest.TestCase):
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 204)
 
+    def test_methods_not_allowed_for_movies(self):
+        actors = [
+            Actor(age=23, full_name='Sanjana Sanghi',
+                  gender=Gender.query.filter_by(name='Female').first()),
+            Actor(age=49, full_name='Saswata Chatterjee',
+                  gender=Gender.query.filter_by(name='Male').first()),
+            Actor(age=49, full_name='Saif Ali Khan',
+                  gender=Gender.query.filter_by(name='Male').first())
+        ]
+        db.session.add_all(actors)
+        db.session.commit()
+
+        response = self.client.post(
+            self.endpoints['movies'],
+            headers=self.get_api_headers(),
+            data=json.dumps({
+                'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
+                'actors': [a.to_json() for a in actors]}))
+        url_movie = response.headers.get('Location')
+
         # put not allowed
         response = self.client.put(
-            '/api/v1/movies',
+            self.endpoints['movies'],
             headers=self.get_api_headers(),
             data=json.dumps({
                 'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
@@ -232,7 +302,7 @@ class APITestCase(unittest.TestCase):
 
         # patch all not allowed
         response = self.client.patch(
-            '/api/v1/movies',
+            self.endpoints['movies'],
             headers=self.get_api_headers(),
             data=json.dumps({'releaseDate': '2020-07-31'}))
         self.assertEqual(response.status_code, 405)
@@ -240,7 +310,51 @@ class APITestCase(unittest.TestCase):
 
         # delete all not allowed
         response = self.client.delete(
-            '/api/v1/movies',
+            self.endpoints['movies'],
             headers=self.get_api_headers())
         self.assertEqual(response.status_code, 405)
         self.assertIsNone(response.json)
+
+    def add_movie(self):
+        actor = Actor(age=23, full_name='Sanjana Sanghi',
+                      gender=Gender.query.filter_by(name='Female').first())
+        db.session.add(actor)
+        db.session.commit()
+
+        movie = Movie(
+            title='Dil Bechara',
+            release_date=datetime(2020, 7, 24),
+            actors=[actor])
+        db.session.add(movie)
+        db.session.commit()
+
+    def test_cannot_get_movie_with_int_id(self):
+        self.add_movie()
+
+        response = self.client.get(
+            self.endpoints['movies'] + '/1',
+            headers=self.get_api_headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])
+
+    def test_cannot_patch_movie_with_int_id(self):
+        self.add_movie()
+
+        response = self.client.patch(
+            self.endpoints['movies'] + '/1',
+            headers=self.get_api_headers(),
+            data=json.dumps({'releaseDate': '2020-07-31'}))
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])
+
+    def test_cannot_delete_movie_with_int_id(self):
+        self.add_movie()
+
+        response = self.client.delete(
+            self.endpoints['movies'] + '/1',
+            headers=self.get_api_headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertIsNotNone(response.json)
+        self.assertIsNotNone(response.json['message'])

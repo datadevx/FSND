@@ -7,7 +7,7 @@ from app.date import date_to_str, str_to_date
 from app.exceptions import ValidationsError
 
 
-class BaseModel(db.Model):
+class UUIDSupportModel(db.Model):
     __abstract__ = True
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(UUIDType(binary=False), nullable=False, unique=True,
@@ -18,7 +18,7 @@ class BaseModel(db.Model):
             return self.id == other.id
 
 
-class Gender(BaseModel):
+class Gender(UUIDSupportModel, db.Model):
     __tablename__ = 'genders'
     name = db.Column(db.String(30), nullable=False, unique=True)
 
@@ -41,7 +41,7 @@ movies_actors = db.Table('movies_actors',
                              'actors.id'), primary_key=True))
 
 
-class Actor(BaseModel):
+class Actor(UUIDSupportModel, db.Model):
     __tablename__ = 'actors'
     age = db.Column(db.Integer)
     full_name = db.Column(db.String(60), nullable=False)
@@ -107,11 +107,14 @@ class Actor(BaseModel):
         validation = ValidationsError('Validation failed')
         # validate required attributes
         if not gender_name:
-            validation.add_error('gender', 'missing')
+            validation.add_error('gender', 'missing',
+                                 'field gender is required')
         if not full_name:
-            validation.add_error('fullName', 'missing')
+            validation.add_error('fullName', 'missing',
+                                 'field full name is required')
         if not age:
-            validation.add_error('age', 'missing')
+            validation.add_error('age', 'missing',
+                                 'field age is required')
 
         gender = None
         if not validation.has_errors():
@@ -138,7 +141,7 @@ class Actor(BaseModel):
         return actor
 
 
-class Movie(BaseModel):
+class Movie(UUIDSupportModel, db.Model):
     __tablename__ = 'movies'
     title = db.Column(db.String(140), nullable=False)
     release_date = db.Column(db.Date, nullable=False)
@@ -218,11 +221,14 @@ class Movie(BaseModel):
         validation = ValidationsError('Validation failed')
         # validate required attributes
         if not title:
-            validation.add_error('title', 'missing')
+            validation.add_error('title', 'missing',
+                                 'field title is required')
         if not release_date_string:
-            validation.add_error('releaseDate', 'missing')
+            validation.add_error('releaseDate', 'missing',
+                                 'field release date is required')
         if not actors_json:
-            validation.add_error('actors', 'missing')
+            validation.add_error('actors', 'missing',
+                                 'field actors is required')
         elif not (isinstance(actors_json, list) and
                   all([item.get('uuid') for item in actors_json])):
             validation.add_error('actors', 'missing_field',

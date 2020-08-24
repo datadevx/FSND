@@ -1,8 +1,10 @@
 from flask import jsonify, request, current_app
 from flask.helpers import url_for
+from sqlalchemy.exc import StatementError
 from app import db
 from app.api import bp
 from app.models import Movie
+from app.api.errors import not_found
 
 
 @bp.route('/movies')
@@ -26,9 +28,13 @@ def get_movies():
     return jsonify(result_dict)
 
 
-@bp.route('movies/<string:id>')
-def get_movie(id):
-    movie = Movie.query.filter_by(uuid=id).first_or_404()
+@bp.route('movies/<string:movie_id>')
+def get_movie(movie_id):
+    movie = None
+    try:
+        movie = Movie.query.filter_by(uuid=movie_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     return jsonify(movie.to_json())
 
 
@@ -37,20 +43,28 @@ def create_movie():
     movie = Movie.new_from_json(request.json)
     db.session.commit()
     return jsonify(movie.to_json()), 201, \
-        {'Location': url_for('api.get_movie', id=str(movie.uuid))}
+        {'Location': url_for('api.get_movie', movie_id=str(movie.uuid))}
 
 
-@bp.route('/movies/<string:id>', methods=['PATCH'])
-def update_movie(id):
-    movie = Movie.query.filter_by(uuid=id).first_or_404()
+@bp.route('/movies/<string:movie_id>', methods=['PATCH'])
+def update_movie(movie_id):
+    movie = None
+    try:
+        movie = Movie.query.filter_by(uuid=movie_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     movie.update_from_json(request.json)
     db.session.commit()
     return jsonify(movie.to_json())
 
 
-@bp.route('/movies/<string:id>', methods=['DELETE'])
-def delete_movie(id):
-    movie = Movie.query.filter_by(uuid=id).first_or_404()
+@bp.route('/movies/<string:movie_id>', methods=['DELETE'])
+def delete_movie(movie_id):
+    movie = None
+    try:
+        movie = Movie.query.filter_by(uuid=movie_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     db.session.delete(movie)
     db.session.commit()
     return '', 204

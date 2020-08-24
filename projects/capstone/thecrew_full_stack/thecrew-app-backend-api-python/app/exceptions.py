@@ -1,5 +1,5 @@
 class ValidationError(ValueError):
-    def __init__(self, field, code, description=None):
+    def __init__(self, field, code, description):
         self.field = field
         self.code = code
         self.description = description
@@ -13,7 +13,7 @@ class ValidationsError(Exception):
         self.message = message
         self.errors = errors if errors else []
 
-    def add_error(self, field, code, description=None):
+    def add_error(self, field, code, description):
         self.errors.append(ValidationError(field, code, description))
 
     def has_errors(self):

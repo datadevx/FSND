@@ -1,8 +1,10 @@
-from flask import jsonify, request, current_app
+from flask import jsonify, request, current_app, abort
 from flask.helpers import url_for
+from sqlalchemy.exc import StatementError
 from app import db
 from app.api import bp
 from app.models import Actor
+from app.api.errors import not_found
 
 
 @bp.route('/actors')
@@ -26,9 +28,13 @@ def get_actors():
     return jsonify(result_dict)
 
 
-@bp.route('actors/<string:id>')
-def get_actor(id):
-    actor = Actor.query.filter_by(uuid=id).first_or_404()
+@bp.route('actors/<string:actor_id>')
+def get_actor(actor_id):
+    actor = None
+    try:
+        actor = Actor.query.filter_by(uuid=actor_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     return jsonify(actor.to_json())
 
 
@@ -37,20 +43,28 @@ def create_actor():
     actor = Actor.new_from_json(request.json)
     db.session.commit()
     return jsonify(actor.to_json()), 201, \
-        {'Location': url_for('api.get_actor', id=actor.uuid)}
+        {'Location': url_for('api.get_actor', actor_id=str(actor.uuid))}
 
 
-@bp.route('/actors/<string:id>', methods=['PATCH'])
-def update_actor(id):
-    actor = Actor.query.filter_by(uuid=id).first_or_404()
+@bp.route('/actors/<string:actor_id>', methods=['PATCH'])
+def update_actor(actor_id):
+    actor = None
+    try:
+        actor = Actor.query.filter_by(uuid=actor_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     actor.update_from_json(request.json)
     db.session.commit()
     return jsonify(actor.to_json())
 
 
-@bp.route('/actors/<string:id>', methods=['DELETE'])
-def delete_actor(id):
-    actor = Actor.query.filter_by(uuid=id).first_or_404()
+@bp.route('/actors/<string:actor_id>', methods=['DELETE'])
+def delete_actor(actor_id):
+    actor = None
+    try:
+        actor = Actor.query.filter_by(uuid=actor_id).first_or_404()
+    except StatementError:
+        return not_found('please use the correct path parameter')
     db.session.delete(actor)
     db.session.commit()
     return '', 204

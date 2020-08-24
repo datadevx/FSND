@@ -10,6 +10,7 @@ class Config(object):
     SQLALCHEMY_RECORD_QUERIES = os.getenv('SQLALCHEMY_RECORD_QUERIES') or True
     THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10
     DATE_FORMAT = os.getenv('DATE_FORMAT') or '%Y-%m-%d'
+    API_VERSION = 'v1'
 
 
 class TestingConfig(Config):

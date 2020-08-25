@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, migrate
 from flask_cors import CORS
+from werkzeug.exceptions import default_exceptions
 from config import configs
 
 db = SQLAlchemy()
@@ -21,7 +22,11 @@ def create_app(config_name):
     app.register_blueprint(api_blueprint,
                            url_prefix=f'/api/{app.config["API_VERSION"]}')
 
+    for code in default_exceptions:
+        app.register_error_handler(code, handle_http_exception)
+
     return app
 
 
 from app import models
+from app.api.errors import handle_http_exception

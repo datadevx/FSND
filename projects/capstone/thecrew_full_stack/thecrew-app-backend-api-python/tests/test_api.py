@@ -108,8 +108,7 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'age': 23, 'gender': 'Female',
                 'fullName': 'Sanjana Sanghi'}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         response = self.client.put(
             url_actor,
@@ -117,8 +116,7 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'age': 23, 'gender': 'Female',
                 'fullName': 'Sanjana Sanghi'}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # post/<uuid> not allowed
         response = self.client.post(
@@ -127,23 +125,20 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'age': 23, 'gender': 'Female',
                 'fullName': 'Sanjana Sanghi'}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # patch all not allowed
         response = self.client.patch(
             self.endpoints['actors'],
             headers=self.get_api_headers(),
             data=json.dumps({'age': 24}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # delete all not allowed
         response = self.client.patch(
             self.endpoints['actors'],
             headers=self.get_api_headers())
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
     def add_actor(self):
         actor = Actor(age=23, full_name='Sanjana Sanghi',
@@ -278,8 +273,7 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
                 'actors': [a.to_json() for a in actors]}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         response = self.client.put(
             url_movie,
@@ -287,8 +281,7 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
                 'actors': [a.to_json() for a in actors]}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # post/<uuid> not allowed
         response = self.client.post(
@@ -297,23 +290,20 @@ class APITestCase(unittest.TestCase):
             data=json.dumps({
                 'title': 'Dil Bechara', 'releaseDate': '2020-07-24',
                 'actors': [a.to_json() for a in actors]}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # patch all not allowed
         response = self.client.patch(
             self.endpoints['movies'],
             headers=self.get_api_headers(),
             data=json.dumps({'releaseDate': '2020-07-31'}))
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
         # delete all not allowed
         response = self.client.delete(
             self.endpoints['movies'],
             headers=self.get_api_headers())
-        self.assertEqual(response.status_code, 405)
-        self.assertIsNone(response.json)
+        self.assertEqual(405, response.status_code)
 
     def add_movie(self):
         actor = Actor(age=23, full_name='Sanjana Sanghi',

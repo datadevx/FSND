@@ -10,20 +10,23 @@ from app.api.errors import not_found
 @bp.route('/movies')
 def get_movies():
     page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', current_app.config[
-        'THECREW_OBJECTS_PER_PAGE'], type=int)
+    limit = request.args.get('limit',
+                             current_app.config['THECREW_OBJECTS_PER_PAGE'],
+                             type=int)
     pagination = Movie.query.paginate(page, per_page=limit, error_out=False)
 
-    result_dict = {'objects': [movie.to_json() for movie in pagination.items],
-                   'totalCount': pagination.total,
-                   'totalPages': pagination.pages,
-                   'page': pagination.page}
+    result_dict = {
+        'objects': [movie.to_json() for movie in pagination.items],
+        'totalCount': pagination.total,
+        'totalPages': pagination.pages,
+        'page': pagination.page
+    }
     if pagination.has_prev:
-        result_dict['prevLink'] = url_for(
-            'api.get_movies', page=pagination.prev_num)
+        result_dict['prevLink'] = url_for('api.get_movies',
+                                          page=pagination.prev_num)
     if pagination.has_next:
-        result_dict['nextLink'] = url_for(
-            'api.get_movies', page=pagination.next_num)
+        result_dict['nextLink'] = url_for('api.get_movies',
+                                          page=pagination.next_num)
 
     return jsonify(result_dict)
 
@@ -40,7 +43,8 @@ def get_movie(movie_id):
 
 @bp.route('/movies', methods=['POST'])
 def create_movie():
-    movie = Movie.new_from_json(request.json)
+    json_movie = request.json or {}
+    movie = Movie.new_from_json(json_movie)
     db.session.commit()
     return jsonify(movie.to_json()), 201, \
         {'Location': url_for('api.get_movie', movie_id=str(movie.uuid))}
@@ -53,7 +57,8 @@ def update_movie(movie_id):
         movie = Movie.query.filter_by(uuid=movie_id).first_or_404()
     except StatementError:
         return not_found('please use the correct path parameter')
-    movie.update_from_json(request.json)
+    json_movie = request.json or {}
+    movie.update_from_json(json_movie)
     db.session.commit()
     return jsonify(movie.to_json())
 

@@ -10,7 +10,9 @@ from app.exceptions import ValidationsError
 class UUIDSupportModel(db.Model):
     __abstract__ = True
     id = db.Column(db.Integer, primary_key=True)
-    uuid = db.Column(UUIDType(binary=False), nullable=False, unique=True,
+    uuid = db.Column(UUIDType(binary=False),
+                     nullable=False,
+                     unique=True,
                      default=uuid.uuid4)
 
     def __eq__(self, other):
@@ -30,15 +32,21 @@ class Gender(UUIDSupportModel, db.Model):
         db.session.add_all([
             Gender(name='Female'),
             Gender(name='Male'),
-            Gender(name='Another')])
+            Gender(name='Another')
+        ])
         db.session.commit()
 
 
-movies_actors = db.Table('movies_actors',
-                         db.Column('movie_id', db.Integer, db.ForeignKey(
-                             'movies.id'), primary_key=True),
-                         db.Column('actor_id', db.Integer, db.ForeignKey(
-                             'actors.id'), primary_key=True))
+movies_actors = db.Table(
+    'movies_actors',
+    db.Column('movie_id',
+              db.Integer,
+              db.ForeignKey('movies.id'),
+              primary_key=True),
+    db.Column('actor_id',
+              db.Integer,
+              db.ForeignKey('actors.id'),
+              primary_key=True))
 
 
 class Actor(UUIDSupportModel, db.Model):
@@ -46,8 +54,9 @@ class Actor(UUIDSupportModel, db.Model):
     age = db.Column(db.Integer)
     full_name = db.Column(db.String(60), nullable=False)
     gender = db.relationship('Gender', uselist=False)
-    gender_id = db.Column(db.Integer, db.ForeignKey(
-        'genders.id'), nullable=False)
+    gender_id = db.Column(db.Integer,
+                          db.ForeignKey('genders.id'),
+                          nullable=False)
 
     def __repr__(self):
         return f'<Actor {self.full_name}>'
@@ -62,19 +71,25 @@ class Actor(UUIDSupportModel, db.Model):
         }
 
     def update_from_json(self, json_actor):
+        validation = ValidationsError('Validation failed')
+        if not json_actor:
+            validation.add_error(
+                'all', 'missing_field',
+                'you must provide at least one of age, fullName or gender fields'
+            )
+            raise validation
+
         gender_name = json_actor.get('gender')
         full_name = json_actor.get('fullName')
         age = json_actor.get('age')
-
-        validation = ValidationsError('Validation failed')
 
         gender = None
         # validation: gender not found
         if gender_name and gender_name != self.gender.name:
             gender = Gender.query.filter_by(name=gender_name).first()
             if not gender:
-                validation.add_error(
-                    'gender', 'unprocessable', 'gender not found')
+                validation.add_error('gender', 'unprocessable',
+                                     'gender not found')
 
         # validation: duplicated, same name, age and gender
         if full_name:
@@ -83,8 +98,8 @@ class Actor(UUIDSupportModel, db.Model):
             filter_gender = gender_name or self.gender.name
             actor_found = Actor.query.filter_by(
                 full_name=filter_full_name, age=filter_age).join(
-                    Gender, Actor.gender).filter(Gender.name == filter_gender
-                                                 ).first()
+                    Gender,
+                    Actor.gender).filter(Gender.name == filter_gender).first()
             if actor_found:
                 validation.add_error('custom', 'already_exists',
                                      f'actor {full_name} already exists')
@@ -106,15 +121,15 @@ class Actor(UUIDSupportModel, db.Model):
 
         validation = ValidationsError('Validation failed')
         # validate required attributes
-        if not gender_name:
-            validation.add_error('gender', 'missing',
-                                 'field gender is required')
-        if not full_name:
-            validation.add_error('fullName', 'missing',
-                                 'field full name is required')
         if not age:
-            validation.add_error('age', 'missing',
+            validation.add_error('age', 'missing_field',
                                  'field age is required')
+        if not full_name:
+            validation.add_error('fullName', 'missing_field',
+                                 'field full name is required')
+        if not gender_name:
+            validation.add_error('gender', 'missing_field',
+                                 'field gender is required')
 
         gender = None
         if not validation.has_errors():
@@ -122,14 +137,14 @@ class Actor(UUIDSupportModel, db.Model):
 
             # validation: gender not found
             if not gender:
-                validation.add_error(
-                    'gender', 'unprocessable', 'gender not found')
+                validation.add_error('gender', 'unprocessable',
+                                     'gender not found')
 
             # validation: duplicated, same name, age and gender
             actor_found = Actor.query.filter_by(
                 full_name=full_name, age=age).join(
-                    Gender, Actor.gender).filter(Gender.name == gender_name
-                                                 ).first()
+                    Gender,
+                    Actor.gender).filter(Gender.name == gender_name).first()
             if actor_found:
                 validation.add_error('custom', 'already_exists',
                                      f'actor {full_name} already exists')
@@ -145,7 +160,8 @@ class Movie(UUIDSupportModel, db.Model):
     __tablename__ = 'movies'
     title = db.Column(db.String(140), nullable=False)
     release_date = db.Column(db.Date, nullable=False)
-    actors = db.relationship('Actor', secondary=movies_actors,
+    actors = db.relationship('Actor',
+                             secondary=movies_actors,
                              backref=db.backref('movies', lazy='dynamic'),
                              lazy='dynamic')
 
@@ -161,22 +177,28 @@ class Movie(UUIDSupportModel, db.Model):
         }
 
     def update_from_json(self, json_movie):
+        validation = ValidationsError('Validation failed')
+        if not json_movie:
+            validation.add_error(
+                'all', 'missing_field',
+                'you must provide at least one of title, releaseDate or actors fields'
+            )
+            raise validation
+
         title = json_movie.get('title')
         release_date_string = json_movie.get('releaseDate')
         actors_json = json_movie.get('actors')
 
-        validation = ValidationsError('Validation failed')
-
         release_date = str_to_date(release_date_string) \
             if release_date_string else None
         if release_date_string and not release_date:
-            validation.add_error('releaseDate', 'invalid',
-                                 f'You must use format: '
-                                 f'{current_app.config["DATE_FORMAT"]}')
+            validation.add_error(
+                'releaseDate', 'invalid', f'you must use format: '
+                f'{current_app.config["DATE_FORMAT"]}')
         # validation: actor not found
         actors = []
-        if actors_json and not (isinstance(actors_json, list) and all([
-                item.get('uuid') for item in actors_json])):
+        if actors_json and not (isinstance(actors_json, list) and all(
+            [item.get('uuid') for item in actors_json])):
             validation.add_error('actors', 'missing_field',
                                  'each actor must have uuid')
         elif actors_json:
@@ -190,16 +212,14 @@ class Movie(UUIDSupportModel, db.Model):
         movie_found = None
         if title or release_date_string:
             filter_title = title or self.title
-            filter_release_date = release_date_string or str(
-                self.release_date)
+            filter_release_date = release_date_string or str(self.release_date)
             movie_found = Movie.query.filter_by(
-                title=filter_title,
-                release_date=filter_release_date).first()
+                title=filter_title, release_date=filter_release_date).first()
         if movie_found:
-            validation.add_error('custom', 'already_exists',
-                                 f'movie {title} '
-                                 f'released {release_date} '
-                                 f'already exists')
+            validation.add_error(
+                'custom', 'already_exists', f'movie {title} '
+                f'released {release_date} '
+                f'already exists')
         if validation.has_errors():
             raise validation
         if title:
@@ -221,16 +241,16 @@ class Movie(UUIDSupportModel, db.Model):
         validation = ValidationsError('Validation failed')
         # validate required attributes
         if not title:
-            validation.add_error('title', 'missing',
+            validation.add_error('title', 'missing_field',
                                  'field title is required')
         if not release_date_string:
-            validation.add_error('releaseDate', 'missing',
+            validation.add_error('releaseDate', 'missing_field',
                                  'field release date is required')
         if not actors_json:
-            validation.add_error('actors', 'missing',
+            validation.add_error('actors', 'missing_field',
                                  'field actors is required')
-        elif not (isinstance(actors_json, list) and
-                  all([item.get('uuid') for item in actors_json])):
+        elif not (isinstance(actors_json, list)
+                  and all([item.get('uuid') for item in actors_json])):
             validation.add_error('actors', 'missing_field',
                                  'each actor must have uuid')
 
@@ -239,16 +259,16 @@ class Movie(UUIDSupportModel, db.Model):
             release_date = str_to_date(release_date_string)
 
             if not release_date:
-                validation.add_error('releaseDate', 'invalid',
-                                     f'You must use format: '
-                                     f'{current_app.config["DATE_FORMAT"]}')
+                validation.add_error(
+                    'releaseDate', 'invalid', f'you must use format: '
+                    f'{current_app.config["DATE_FORMAT"]}')
 
             # validation: actor not found
             if actors_json:
                 for a in actors_json:
                     try:
-                        actors.append(Actor.query.filter_by(uuid=a['uuid']
-                                                            ).one())
+                        actors.append(
+                            Actor.query.filter_by(uuid=a['uuid']).one())
                     except exc.NoResultFound:
                         validation.add_error('actors', 'unprocessable',
                                              f'actor {a["uuid"]} not found')
@@ -257,9 +277,10 @@ class Movie(UUIDSupportModel, db.Model):
             movie_found = Movie.query.filter_by(
                 title=title, release_date=release_date_string).first()
             if movie_found:
-                validation.add_error('custom', 'already_exists',
-                                     f'movie {title} released {release_date} '
-                                     f'already exists')
+                validation.add_error(
+                    'custom', 'already_exists',
+                    f'movie {title} released {release_date} '
+                    f'already exists')
 
         if validation.has_errors():
             raise validation

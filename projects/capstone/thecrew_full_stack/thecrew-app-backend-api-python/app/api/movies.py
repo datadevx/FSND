@@ -5,9 +5,11 @@ from app import db
 from app.api import bp
 from app.models import Movie
 from app.api.errors import not_found
+from app.auth.auth import auth_required
 
 
 @bp.route('/movies')
+@auth_required('view:movies')
 def get_movies():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit',
@@ -32,6 +34,7 @@ def get_movies():
 
 
 @bp.route('movies/<string:movie_id>')
+@auth_required('view:movies')
 def get_movie(movie_id):
     movie = None
     try:
@@ -42,6 +45,7 @@ def get_movie(movie_id):
 
 
 @bp.route('/movies', methods=['POST'])
+@auth_required('add:movies')
 def create_movie():
     json_movie = request.json or {}
     movie = Movie.new_from_json(json_movie)
@@ -51,6 +55,7 @@ def create_movie():
 
 
 @bp.route('/movies/<string:movie_id>', methods=['PATCH'])
+@auth_required('edit:movies')
 def update_movie(movie_id):
     movie = None
     try:
@@ -64,6 +69,7 @@ def update_movie(movie_id):
 
 
 @bp.route('/movies/<string:movie_id>', methods=['DELETE'])
+@auth_required('delete:movies')
 def delete_movie(movie_id):
     movie = None
     try:

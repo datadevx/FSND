@@ -5,9 +5,11 @@ from app import db
 from app.api import bp
 from app.models import Actor
 from app.api.errors import not_found
+from app.auth.auth import auth_required
 
 
 @bp.route('/actors')
+@auth_required('view:actors')
 def get_actors():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit',
@@ -32,6 +34,7 @@ def get_actors():
 
 
 @bp.route('actors/<string:actor_id>')
+@auth_required('view:actors')
 def get_actor(actor_id):
     actor = None
     try:
@@ -42,6 +45,7 @@ def get_actor(actor_id):
 
 
 @bp.route('/actors', methods=['POST'])
+@auth_required('add:actors')
 def create_actor():
     json_actor = request.json or {}
     actor = Actor.new_from_json(json_actor)
@@ -51,6 +55,7 @@ def create_actor():
 
 
 @bp.route('/actors/<string:actor_id>', methods=['PATCH'])
+@auth_required('edit:actors')
 def update_actor(actor_id):
     actor = None
     try:
@@ -64,6 +69,7 @@ def update_actor(actor_id):
 
 
 @bp.route('/actors/<string:actor_id>', methods=['DELETE'])
+@auth_required('delete:actors')
 def delete_actor(actor_id):
     actor = None
     try:

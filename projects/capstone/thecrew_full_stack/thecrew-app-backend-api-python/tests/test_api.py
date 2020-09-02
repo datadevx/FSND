@@ -14,8 +14,8 @@ class APITestCase(unittest.TestCase):
         Gender.insert_genders()
         self.client = self.app.test_client()
         self.endpoints = {
-            'actors': f'/api/{self.app.config["API_VERSION"]}/actors',
-            'movies': f'/api/{self.app.config["API_VERSION"]}/movies'
+            'actors': f'/api/{self.app.config["THECREW_API_VERSION"]}/actors',
+            'movies': f'/api/{self.app.config["THECREW_API_VERSION"]}/movies'
         }
 
     def tearDown(self):
@@ -26,7 +26,16 @@ class APITestCase(unittest.TestCase):
     def get_api_headers(self):
         return {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZuVHkyR2VWMFI2QXhfZ1paMGtkQSJ9.'\
+                'eyJpc3MiOiJodHRwczovL3RoZS1jcmV3LWZzbmQudXMuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVmNGZiN2MyZTllZjVmM'\
+                'DA2N2I2MDk2YSIsImF1ZCI6InRoZWNyZXctYXBpIiwiaWF0IjoxNTk5MDYxMDM4LCJleHAiOjE1OTkwNjgyMzgsImF6cCI6Il'\
+                'pxenllRUJJbm9qRThIS2JIQzk0Z001U3YyeEZMUk1JIiwic2NvcGUiOiIiLCJwZXJtaXNzaW9ucyI6WyJhZGQ6YWN0b3JzIiw'\
+                'iYWRkOm1vdmllcyIsImRlbGV0ZTphY3RvcnMiLCJkZWxldGU6bW92aWVzIiwiZWRpdDphY3RvcnMiLCJlZGl0Om1vdmllcyIs'\
+                'InZpZXc6YWN0b3JzIiwidmlldzptb3ZpZXMiXX0.QYgaJGD1jWTm8OG61v7u7RvglOYKWWHagHHS6Bu3fZOqzP-HAa3erXMy5'\
+                '5iFxLOWI-lWvp50Y1RFCZ_WL6UWQx99dk6ynfkx_qia6klLKoh4E5mnJAJRjc8LRQkP7InYPAze3QnZhnavyvM_5M5OtqX5xO'\
+                'nZMOC1efFuvp9DBK-uF887qVHJqZCy9rv3du3R7F9YeLu_6loVlvd2yetdTUM2kbwqoAOEPwOrZ8DsG5AWAVOcxhzFFJxSHrt'\
+                '5bOvpHboUe60_zEIkMb_QakN_xer-7AdiajCOnQq_0tjunCFetdp-teEJTVLGZo_c2VgM2LPwlZDmqielfpahaYvK_A'
         }
 
     def test_crud_actors(self):

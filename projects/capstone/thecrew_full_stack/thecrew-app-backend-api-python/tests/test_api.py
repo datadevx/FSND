@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import unittest
 import json
+import requests
 from app import create_app, db
 from app.models import Gender, Actor, Movie
+from app.date import now
 
 
 class APITestCase(unittest.TestCase):
@@ -17,6 +19,7 @@ class APITestCase(unittest.TestCase):
             'actors': f'/api/{self.app.config["THECREW_API_VERSION"]}/actors',
             'movies': f'/api/{self.app.config["THECREW_API_VERSION"]}/movies'
         }
+        self.token = {}
 
     def tearDown(self):
         db.session.remove()
@@ -24,18 +27,26 @@ class APITestCase(unittest.TestCase):
         self.app_context.pop()
 
     def get_api_headers(self):
+        if not self.token or (
+                self.token
+                and now() + timedelta(seconds=self.token['expires_in']) <
+                now() + timedelta(seconds=60)):
+            url = f'https://{self.app.config["THECREW_AUTH0_DOMAIN"]}/oauth/token'
+            payload = {
+                'client_id': 'nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b',
+                'client_secret':
+                'n4ft7fYUgdJIEg0CX1O2VERnaFq2F46NmwAjmNcEV6jyo5Wiz68s0TV7piNYjJCg',
+                'audience': 'thecrew-api',
+                'grant_type': 'client_credentials'
+            }
+            response = requests.post(url, json=payload)
+            self.token = response.json()
+
+        bearer_token = f'{self.token["token_type"]} {self.token["access_token"]}'
         return {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZuVHkyR2VWMFI2QXhfZ1paMGtkQSJ9.'\
-                'eyJpc3MiOiJodHRwczovL3RoZS1jcmV3LWZzbmQudXMuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVmNGZiN2MyZTllZjVmM'\
-                'DA2N2I2MDk2YSIsImF1ZCI6InRoZWNyZXctYXBpIiwiaWF0IjoxNTk5MDYxMDM4LCJleHAiOjE1OTkwNjgyMzgsImF6cCI6Il'\
-                'pxenllRUJJbm9qRThIS2JIQzk0Z001U3YyeEZMUk1JIiwic2NvcGUiOiIiLCJwZXJtaXNzaW9ucyI6WyJhZGQ6YWN0b3JzIiw'\
-                'iYWRkOm1vdmllcyIsImRlbGV0ZTphY3RvcnMiLCJkZWxldGU6bW92aWVzIiwiZWRpdDphY3RvcnMiLCJlZGl0Om1vdmllcyIs'\
-                'InZpZXc6YWN0b3JzIiwidmlldzptb3ZpZXMiXX0.QYgaJGD1jWTm8OG61v7u7RvglOYKWWHagHHS6Bu3fZOqzP-HAa3erXMy5'\
-                '5iFxLOWI-lWvp50Y1RFCZ_WL6UWQx99dk6ynfkx_qia6klLKoh4E5mnJAJRjc8LRQkP7InYPAze3QnZhnavyvM_5M5OtqX5xO'\
-                'nZMOC1efFuvp9DBK-uF887qVHJqZCy9rv3du3R7F9YeLu_6loVlvd2yetdTUM2kbwqoAOEPwOrZ8DsG5AWAVOcxhzFFJxSHrt'\
-                '5bOvpHboUe60_zEIkMb_QakN_xer-7AdiajCOnQq_0tjunCFetdp-teEJTVLGZo_c2VgM2LPwlZDmqielfpahaYvK_A'
+            'Authorization': bearer_token
         }
 
     def test_crud_actors(self):

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import current_app
 
 
@@ -12,8 +12,12 @@ def date_to_str(date):
 
 def str_to_date(date_string):
     try:
-        date = datetime.strptime(date_string, current_app.config[
-            'DATE_FORMAT'])
+        date = datetime.strptime(date_string,
+                                 current_app.config['DATE_FORMAT'])
     except ValueError:
         return None
     return date
+
+
+def now():
+    return datetime.now(tz=timezone.utc)

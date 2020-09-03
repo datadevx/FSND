@@ -1,4 +1,4 @@
-from flask import jsonify, request, current_app, abort
+from flask import jsonify, request, current_app
 from flask.helpers import url_for
 from sqlalchemy.exc import StatementError
 from app import db

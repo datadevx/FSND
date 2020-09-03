@@ -6,6 +6,8 @@ from app import create_app, db
 from app.models import Gender, Actor, Movie
 from app.date import now
 
+_cached_auth_headers = {'token': {}, 'token_date': None, 'token_scope': None}
+
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
@@ -19,34 +21,75 @@ class APITestCase(unittest.TestCase):
             'actors': f'/api/{self.app.config["THECREW_API_VERSION"]}/actors',
             'movies': f'/api/{self.app.config["THECREW_API_VERSION"]}/movies'
         }
-        self.token = {}
 
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
 
-    def get_api_headers(self):
-        if not self.token or (
-                self.token
-                and now() + timedelta(seconds=self.token['expires_in']) <
-                now() + timedelta(seconds=60)):
-            url = f'https://{self.app.config["THECREW_AUTH0_DOMAIN"]}/oauth/token'
-            payload = {
-                'client_id': 'nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b',
-                'client_secret':
-                'n4ft7fYUgdJIEg0CX1O2VERnaFq2F46NmwAjmNcEV6jyo5Wiz68s0TV7piNYjJCg',
-                'audience': 'thecrew-api',
-                'grant_type': 'client_credentials'
-            }
-            response = requests.post(url, json=payload)
-            self.token = response.json()
+    @classmethod
+    def setUpClass(cls):
+        cls.roles = {
+            'casting_assistant' : 'view:actors view:movies',
+            'casting_director'  : 'view:actors add:actors edit:actors '\
+                'delete:actors view:movies edit:movies',
+            'executive_producer': 'view:actors add:actors edit:actors '\
+                'delete:actors view:movies add:movies edit:movies '\
+                    'delete:movies'
+        }
 
-        bearer_token = f'{self.token["token_type"]} {self.token["access_token"]}'
+    def _set_cached_auth_headers(self, **kwargs):
+        global _cached_auth_headers
+        for k in kwargs:
+            _cached_auth_headers[k] = kwargs[k]
+
+    def _is_auth_token_expired(self):
+        if not _cached_auth_headers['token']:
+            return False
+        expires_in = _cached_auth_headers['token']['expires_in']
+        token_date = _cached_auth_headers['token_date']
+        return token_date + timedelta(seconds=expires_in) < \
+            now() + timedelta(seconds=60)
+
+    def _has_different_scope(self, scope):
+        return _cached_auth_headers['token_scope'] != scope
+
+    def _set_auth_token(self, token, scope):
+        self._set_cached_auth_headers(token=token)
+        self._set_cached_auth_headers(token_scope=scope)
+        self._set_cached_auth_headers(token_date=now())
+
+    def _get_auth_token(self):
+        return f'{_cached_auth_headers["token"]["token_type"]} \
+            {_cached_auth_headers["token"]["access_token"]}' \
+                if _cached_auth_headers['token'] else None
+
+    def _build_auth_token_payload(self, scope):
+        payload = {
+            'client_id': 'nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b',
+            'client_secret': 'n4ft7fYUgdJIEg0CX1O2VERnaFq2F46Nmw'\
+                'AjmNcEV6jyo5Wiz68s0TV7piNYjJCg',
+            'audience': 'thecrew-api',
+            'grant_type': 'client_credentials'
+        }
+        if scope:
+            payload['scope'] = scope
+        return payload
+
+    def _request_auth_token(self, scope):
+        url = f'https://{self.app.config["THECREW_AUTH0_DOMAIN"]}/oauth/token'
+        payload = self._build_auth_token_payload(scope)
+        response = requests.post(url, json=payload)
+        self._set_auth_token(response.json(), scope)
+
+    def get_api_headers(self, scope=None):
+        if not _cached_auth_headers['token'] or self._is_auth_token_expired() \
+                or self._has_different_scope(scope):
+            self._request_auth_token(scope)
         return {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': bearer_token
+            'Authorization': self._get_auth_token()
         }
 
     def test_crud_actors(self):
@@ -454,3 +497,399 @@ class APITestCase(unittest.TestCase):
         self.assertIn('fullName',
                       json_response.get('errors')[0]['description'])
         self.assertIn('gender', json_response.get('errors')[0]['description'])
+
+    def test_casting_assistant_can_view_actors(self):
+        actor = self.add_actor()
+        response = self.client.get(self.endpoints['actors'],
+                                   headers=self.get_api_headers(
+                                       self.roles['casting_assistant']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(actor.uuid))
+        self.assertEqual(json_response['objects'][0]['fullName'],
+                         'Sanjana Sanghi')
+        self.assertEqual(json_response['objects'][0]['age'], 23)
+        self.assertEqual(json_response['objects'][0]['gender'], 'Female')
+
+    def test_casting_assistant_can_view_movies(self):
+        movie = self.add_movie()
+        response = self.client.get(self.endpoints['movies'],
+                                   headers=self.get_api_headers(
+                                       self.roles['casting_assistant']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(movie.uuid))
+        self.assertEqual(json_response['objects'][0]['title'], 'Dil Bechara')
+        self.assertEqual(json_response['objects'][0]['releaseDate'],
+                         '2020-07-24')
+        self.assertEqual(len(json_response['objects'][0]['actors']), 1)
+        self.assertListEqual(json_response['objects'][0]['actors'],
+                             [a.to_json() for a in movie.actors])
+
+    def test_casting_assistant_cannot_add_actors(self):
+        response = self.client.post(self.endpoints['actors'],
+                                    headers=self.get_api_headers(
+                                        self.roles['casting_assistant']),
+                                    data=json.dumps({
+                                        'age':
+                                        23,
+                                        'gender':
+                                        'Female',
+                                        'fullName':
+                                        'Sanjana Sanghi'
+                                    }))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_assistant_cannot_add_movies(self):
+        actors = [
+            Actor(age=23,
+                  full_name='Sanjana Sanghi',
+                  gender=Gender.query.filter_by(name='Female').first()),
+            Actor(age=49,
+                  full_name='Saswata Chatterjee',
+                  gender=Gender.query.filter_by(name='Male').first()),
+            Actor(age=49,
+                  full_name='Saif Ali Khan',
+                  gender=Gender.query.filter_by(name='Male').first())
+        ]
+        db.session.add_all(actors)
+        db.session.commit()
+
+        response = self.client.post(
+            self.endpoints['movies'],
+            headers=self.get_api_headers(self.roles['casting_assistant']),
+            data=json.dumps({
+                'title': 'Dil Bechara',
+                'releaseDate': '2020-07-24',
+                'actors': [a.to_json() for a in actors]
+            }))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_assistant_cannot_update_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.patch(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['casting_assistant']),
+            data=json.dumps({'age': 24}))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_assistant_cannot_update_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.patch(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['casting_assistant']),
+            data=json.dumps({'releaseDate': '2020-07-31'}))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_assistant_cannot_delete_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.delete(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['casting_assistant']))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_assistant_cannot_delete_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.delete(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['casting_assistant']))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_director_can_view_actors(self):
+        actor = self.add_actor()
+        response = self.client.get(self.endpoints['actors'],
+                                   headers=self.get_api_headers(
+                                       self.roles['casting_director']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(actor.uuid))
+        self.assertEqual(json_response['objects'][0]['fullName'],
+                         'Sanjana Sanghi')
+        self.assertEqual(json_response['objects'][0]['age'], 23)
+        self.assertEqual(json_response['objects'][0]['gender'], 'Female')
+
+    def test_casting_director_can_view_movies(self):
+        movie = self.add_movie()
+        response = self.client.get(self.endpoints['movies'],
+                                   headers=self.get_api_headers(
+                                       self.roles['casting_director']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(movie.uuid))
+        self.assertEqual(json_response['objects'][0]['title'], 'Dil Bechara')
+        self.assertEqual(json_response['objects'][0]['releaseDate'],
+                         '2020-07-24')
+        self.assertEqual(len(json_response['objects'][0]['actors']), 1)
+        self.assertListEqual(json_response['objects'][0]['actors'],
+                             [a.to_json() for a in movie.actors])
+
+    def test_casting_director_can_add_actors(self):
+        response = self.client.post(self.endpoints['actors'],
+                                    headers=self.get_api_headers(
+                                        self.roles['casting_director']),
+                                    data=json.dumps({
+                                        'age':
+                                        23,
+                                        'gender':
+                                        'Female',
+                                        'fullName':
+                                        'Sanjana Sanghi'
+                                    }))
+        self.assertEqual(response.status_code, 201)
+        json_response = response.json
+        self.assertIsNotNone(json_response['uuid'])
+        self.assertEqual(json_response['age'], 23)
+        self.assertEqual(json_response['fullName'], 'Sanjana Sanghi')
+        self.assertEqual(json_response['gender'], 'Female')
+        self.assertEqual(json_response['moviesCount'], 0)
+
+    def test_casting_director_cannot_add_movies(self):
+        actors = [
+            Actor(age=23,
+                  full_name='Sanjana Sanghi',
+                  gender=Gender.query.filter_by(name='Female').first()),
+            Actor(age=49,
+                  full_name='Saswata Chatterjee',
+                  gender=Gender.query.filter_by(name='Male').first()),
+            Actor(age=49,
+                  full_name='Saif Ali Khan',
+                  gender=Gender.query.filter_by(name='Male').first())
+        ]
+        db.session.add_all(actors)
+        db.session.commit()
+
+        response = self.client.post(
+            self.endpoints['movies'],
+            headers=self.get_api_headers(self.roles['casting_director']),
+            data=json.dumps({
+                'title': 'Dil Bechara',
+                'releaseDate': '2020-07-24',
+                'actors': [a.to_json() for a in actors]
+            }))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_casting_director_can_update_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.patch(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['casting_director']),
+            data=json.dumps({'age': 24}))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertEqual(json_response['uuid'], str(actor.uuid))
+        self.assertEqual(json_response['age'], 24)
+        self.assertEqual(json_response['fullName'], 'Sanjana Sanghi')
+        self.assertEqual(json_response['gender'], 'Female')
+        self.assertEqual(json_response['moviesCount'], 0)
+
+    def test_casting_director_can_update_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.patch(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['casting_director']),
+            data=json.dumps({'releaseDate': '2020-07-31'}))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertEqual(json_response['uuid'], str(movie.uuid))
+        self.assertEqual(json_response['title'], 'Dil Bechara')
+        self.assertEqual(json_response['releaseDate'], '2020-07-31')
+        self.assertEqual(len(json_response['actors']), 1)
+        self.assertListEqual(json_response['actors'],
+                             [a.to_json() for a in movie.actors])
+
+    def test_casting_director_can_delete_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.delete(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['casting_director']))
+        self.assertEqual(response.status_code, 204)
+
+    def test_casting_director_cannot_delete_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.delete(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['casting_director']))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['errors'][0]['code'], 'unauthorized')
+        self.assertEqual(response.json['errors'][0]['description'],
+                         'Permission not found')
+
+    def test_executive_producer_can_view_actors(self):
+        actor = self.add_actor()
+        response = self.client.get(self.endpoints['actors'],
+                                   headers=self.get_api_headers(
+                                       self.roles['executive_producer']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(actor.uuid))
+        self.assertEqual(json_response['objects'][0]['fullName'],
+                         'Sanjana Sanghi')
+        self.assertEqual(json_response['objects'][0]['age'], 23)
+        self.assertEqual(json_response['objects'][0]['gender'], 'Female')
+
+    def test_executive_producer_can_view_movies(self):
+        movie = self.add_movie()
+        response = self.client.get(self.endpoints['movies'],
+                                   headers=self.get_api_headers(
+                                       self.roles['executive_producer']))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertIsNotNone(json_response['objects'])
+        self.assertEqual(json_response.get('totalCount', 0), 1)
+        self.assertEqual(json_response.get('totalPages', 0), 1)
+        self.assertEqual(json_response.get('page', 0), 1)
+        self.assertEqual(json_response['objects'][0]['uuid'], str(movie.uuid))
+        self.assertEqual(json_response['objects'][0]['title'], 'Dil Bechara')
+        self.assertEqual(json_response['objects'][0]['releaseDate'],
+                         '2020-07-24')
+        self.assertEqual(len(json_response['objects'][0]['actors']), 1)
+        self.assertListEqual(json_response['objects'][0]['actors'],
+                             [a.to_json() for a in movie.actors])
+
+    def test_executive_producer_can_add_actors(self):
+        response = self.client.post(self.endpoints['actors'],
+                                    headers=self.get_api_headers(
+                                        self.roles['executive_producer']),
+                                    data=json.dumps({
+                                        'age':
+                                        23,
+                                        'gender':
+                                        'Female',
+                                        'fullName':
+                                        'Sanjana Sanghi'
+                                    }))
+        self.assertEqual(response.status_code, 201)
+        json_response = response.json
+        self.assertIsNotNone(json_response['uuid'])
+        self.assertEqual(json_response['age'], 23)
+        self.assertEqual(json_response['fullName'], 'Sanjana Sanghi')
+        self.assertEqual(json_response['gender'], 'Female')
+        self.assertEqual(json_response['moviesCount'], 0)
+
+    def test_executive_producer_can_add_movies(self):
+        actors = [
+            Actor(age=23,
+                  full_name='Sanjana Sanghi',
+                  gender=Gender.query.filter_by(name='Female').first()),
+            Actor(age=49,
+                  full_name='Saswata Chatterjee',
+                  gender=Gender.query.filter_by(name='Male').first()),
+            Actor(age=49,
+                  full_name='Saif Ali Khan',
+                  gender=Gender.query.filter_by(name='Male').first())
+        ]
+        db.session.add_all(actors)
+        db.session.commit()
+
+        response = self.client.post(
+            self.endpoints['movies'],
+            headers=self.get_api_headers(self.roles['executive_producer']),
+            data=json.dumps({
+                'title': 'Dil Bechara',
+                'releaseDate': '2020-07-24',
+                'actors': [a.to_json() for a in actors]
+            }))
+        self.assertEqual(response.status_code, 201)
+        json_response = response.json
+        self.assertTrue(json_response['uuid'])
+        self.assertEqual(json_response['title'], 'Dil Bechara')
+        self.assertEqual(json_response['releaseDate'], '2020-07-24')
+        self.assertEqual(len(json_response['actors']), 3)
+        self.assertListEqual(json_response['actors'],
+                             [a.to_json() for a in actors])
+
+    def test_executive_producer_can_update_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.patch(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['executive_producer']),
+            data=json.dumps({'age': 24}))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertEqual(json_response['uuid'], str(actor.uuid))
+        self.assertEqual(json_response['age'], 24)
+        self.assertEqual(json_response['fullName'], 'Sanjana Sanghi')
+        self.assertEqual(json_response['gender'], 'Female')
+        self.assertEqual(json_response['moviesCount'], 0)
+
+    def test_executive_producer_can_update_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.patch(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['executive_producer']),
+            data=json.dumps({'releaseDate': '2020-07-31'}))
+        self.assertEqual(response.status_code, 200)
+        json_response = response.json
+        self.assertEqual(json_response['uuid'], str(movie.uuid))
+        self.assertEqual(json_response['title'], 'Dil Bechara')
+        self.assertEqual(json_response['releaseDate'], '2020-07-31')
+        self.assertEqual(len(json_response['actors']), 1)
+        self.assertListEqual(json_response['actors'],
+                             [a.to_json() for a in movie.actors])
+
+    def test_executive_producer_can_delete_actors(self):
+        actor = self.add_actor()
+
+        response = self.client.delete(
+            f'{self.endpoints["actors"]}/{actor.uuid}',
+            headers=self.get_api_headers(self.roles['executive_producer']))
+        self.assertEqual(response.status_code, 204)
+
+    def test_executive_producer_cannot_delete_movies(self):
+        movie = self.add_movie()
+
+        response = self.client.delete(
+            f'{self.endpoints["movies"]}/{movie.uuid}',
+            headers=self.get_api_headers(self.roles['executive_producer']))
+        self.assertEqual(response.status_code, 204)

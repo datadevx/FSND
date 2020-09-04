@@ -8,13 +8,13 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = os.getenv('SQLALCHEMY_RECORD_QUERIES') or True
     THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10
-    THECREW_API_VERSION = os.getenv('API_VERSION') or 'v1'
+    THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
     THECREW_AUTH0_DOMAIN = os.getenv(
-        'AUTH0_DOMAIN') or 'the-crew-fsnd.us.auth0.com'
+        'THECREW_AUTH0_DOMAIN') or 'the-crew-fsnd.us.auth0.com'
     THECREW_AUTH0_ALGORITHMS = ['RS256']
     THECREW_AUTH0_API_AUDIENCE = os.getenv(
-        'AUTH0_API_AUDIENCE') or 'thecrew-api'
-    DATE_FORMAT = os.getenv('DATE_FORMAT') or '%Y-%m-%d'
+        'THECREW_AUTH0_API_AUDIENCE') or 'thecrew-api'
+    THECREW_DATE_FORMAT = os.getenv('THECREW_DATE_FORMAT') or '%Y-%m-%d'
 
 
 class TestingConfig(Config):

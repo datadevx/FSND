@@ -3,7 +3,7 @@ from flask.globals import current_app
 from sqlalchemy.orm import exc
 from sqlalchemy_utils import UUIDType
 from app import db
-from app.date import date_to_str, str_to_date
+from app.date import date_to_str, now, str_to_date
 from app.exceptions import ValidationsError
 
 
@@ -193,8 +193,8 @@ class Movie(UUIDSupportModel, db.Model):
             if release_date_string else None
         if release_date_string and not release_date:
             validation.add_error(
-                'releaseDate', 'invalid', f'you must use format: '
-                f'{current_app.config["DATE_FORMAT"]}')
+                'releaseDate', 'invalid',
+                f'you must use date with format: {date_to_str(now())}')
         # validation: actor not found
         actors = []
         if actors_json and not (isinstance(actors_json, list) and all(
@@ -260,8 +260,8 @@ class Movie(UUIDSupportModel, db.Model):
 
             if not release_date:
                 validation.add_error(
-                    'releaseDate', 'invalid', f'you must use format: '
-                    f'{current_app.config["DATE_FORMAT"]}')
+                    'releaseDate', 'invalid',
+                    f'you must use date with format: {date_to_str(now())}')
 
             # validation: actor not found
             if actors_json:

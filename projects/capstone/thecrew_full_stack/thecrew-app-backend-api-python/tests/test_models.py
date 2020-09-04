@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from app import create_app, db
 from app.models import Gender, Actor, Movie
-from app.date import date_to_str
+from app.date import date_to_str, now
 from app.exceptions import ValidationsError
 
 
@@ -482,7 +482,7 @@ class MovieCrudTestCase(BaseModelTestCase):
         self.assertTrue(len(validation_error.errors), 1)
         self.assertTrue(validation_error.get_error('releaseDate', 'invalid'))
         self.assertIn(
-            f'format: {self.app.config["DATE_FORMAT"]}',
+            f'you must use date with format: {date_to_str(now())}',
             validation_error.get_error('releaseDate', 'invalid').description)
 
         # test actor not found
@@ -630,7 +630,7 @@ class MovieCrudTestCase(BaseModelTestCase):
         self.assertTrue(len(validation_error.errors), 1)
         self.assertTrue(validation_error.get_error('releaseDate', 'invalid'))
         self.assertIn(
-            f'format: {self.app.config["DATE_FORMAT"]}',
+            f'you must use date with format: {date_to_str(now())}',
             validation_error.get_error('releaseDate', 'invalid').description)
 
         # test actors is a list and all have uuid

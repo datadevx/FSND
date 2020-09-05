@@ -3,6 +3,7 @@ import unittest
 import json
 import requests
 from app import create_app, db
+from settings import load_dotenv
 from app.models import Gender, Actor, Movie
 from app.date import now
 
@@ -11,6 +12,7 @@ _cached_auth_headers = {'token': {}, 'token_date': None, 'token_scope': None}
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
+        load_dotenv()
         self.app = create_app('testing')
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -66,18 +68,17 @@ class APITestCase(unittest.TestCase):
 
     def _build_auth_token_payload(self, scope):
         payload = {
-            'client_id': 'nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b',
-            'client_secret': 'n4ft7fYUgdJIEg0CX1O2VERnaFq2F46Nmw'\
-                'AjmNcEV6jyo5Wiz68s0TV7piNYjJCg',
-            'audience': 'thecrew-api',
-            'grant_type': 'client_credentials'
+            'client_id': self.app.config['AUTH0_CLIENT_ID'],
+            'client_secret': self.app.config['AUTH0_CLIENT_SECRET'],
+            'audience': self.app.config['AUTH0_API_AUDIENCE'],
+            'grant_type': self.app.config['AUTH0_GRANT_TYPE']
         }
         if scope:
             payload['scope'] = scope
         return payload
 
     def _request_auth_token(self, scope):
-        url = f'https://{self.app.config["THECREW_AUTH0_DOMAIN"]}/oauth/token'
+        url = f'https://{self.app.config["AUTH0_DOMAIN"]}/oauth/token'
         payload = self._build_auth_token_payload(scope)
         response = requests.post(url, json=payload)
         self._set_auth_token(response.json(), scope)

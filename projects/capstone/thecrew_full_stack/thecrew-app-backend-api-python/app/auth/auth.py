@@ -31,8 +31,7 @@ def verify_decode_jwt(token):
     except (jwt.JWTError, Exception):
         raise AuthError('invalid_header', 'Authorization malformed', 401)
     response = requests.get(
-        f'https://{current_app.config["THECREW_AUTH0_DOMAIN"]}/.well-known/jwks.json'
-    )
+        f'https://{current_app.config["AUTH0_DOMAIN"]}/.well-known/jwks.json')
     jwks = response.json()
     rsa_key = {}
     for key in jwks['keys']:
@@ -48,10 +47,9 @@ def verify_decode_jwt(token):
             payload = jwt.decode(
                 token,
                 rsa_key,
-                algorithms=current_app.config['THECREW_AUTH0_ALGORITHMS'],
-                audience=current_app.config['THECREW_AUTH0_API_AUDIENCE'],
-                issuer=f'https://{current_app.config["THECREW_AUTH0_DOMAIN"]}/'
-            )
+                algorithms=current_app.config['AUTH0_ALGORITHMS'],
+                audience=current_app.config['AUTH0_API_AUDIENCE'],
+                issuer=f'https://{current_app.config["AUTH0_DOMAIN"]}/')
             return payload
         except jwt.ExpiredSignatureError:
             raise AuthError('token_expired', 'Token expired', 401)

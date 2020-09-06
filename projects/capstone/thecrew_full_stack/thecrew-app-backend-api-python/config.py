@@ -9,12 +9,19 @@ class Config(object):
     FLASK_ENV = os.getenv('FLASK_ENV')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = os.getenv('SQLALCHEMY_RECORD_QUERIES') or True
-    THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
-    THECREW_DATE_FORMAT = os.getenv('THECREW_DATE_FORMAT') or '%Y-%m-%d'
-    THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10
     AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
     AUTH0_API_AUDIENCE = os.getenv('AUTH0_API_AUDIENCE')
     AUTH0_ALGORITHMS = ['RS256']
+    MAIL_SERVER = os.getenv('MAIL_SERVER')
+    MAIL_PORT = int(os.getenv('MAIL_PORT') or 25)
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS') is not None
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
+    THECREW_DATE_FORMAT = os.getenv('THECREW_DATE_FORMAT') or '%Y-%m-%d'
+    THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10
+    THECREW_LOG_TO_STDOUT = os.getenv('THECREW_LOG_TO_STDOUT')
+    THECREW_ADMINS = ['filipebzerra@gmail.com']
 
 
 class TestingConfig(Config):

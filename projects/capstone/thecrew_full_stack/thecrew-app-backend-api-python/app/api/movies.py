@@ -1,7 +1,7 @@
 from flask import jsonify, request, current_app
 from flask.helpers import url_for
 from sqlalchemy.exc import StatementError
-from app import db
+from app import db, cache
 from app.api import bp
 from app.models import Movie
 from app.api.errors import not_found
@@ -10,6 +10,7 @@ from app.auth.auth import auth_required
 
 @bp.route('/movies')
 @auth_required('view:movies')
+@cache.memoize()
 def get_movies():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit',
@@ -35,6 +36,7 @@ def get_movies():
 
 @bp.route('movies/<string:movie_id>')
 @auth_required('view:movies')
+@cache.memoize()
 def get_movie(movie_id):
     movie = None
     try:
@@ -50,6 +52,7 @@ def create_movie():
     json_movie = request.json or {}
     movie = Movie.new_from_json(json_movie)
     db.session.commit()
+    cache.delete_memoized(get_movies)
     return jsonify(movie.to_json()), 201, \
         {'Location': url_for('api.get_movie', movie_id=str(movie.uuid))}
 
@@ -65,6 +68,8 @@ def update_movie(movie_id):
     json_movie = request.json or {}
     movie.update_from_json(json_movie)
     db.session.commit()
+    cache.delete_memoized(get_movies)
+    cache.delete_memoized(get_movie, movie_id)
     return jsonify(movie.to_json())
 
 
@@ -78,4 +83,6 @@ def delete_movie(movie_id):
         return not_found('please use the correct path parameter')
     db.session.delete(movie)
     db.session.commit()
+    cache.delete_memoized(get_movies)
+    cache.delete_memoized(get_movie, movie_id)
     return '', 204

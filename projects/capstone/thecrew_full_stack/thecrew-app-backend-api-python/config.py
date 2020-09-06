@@ -25,6 +25,9 @@ class Config(object):
     ]
     COMPRESS_LEVEL = 6
     COMPRESS_MIN_SIZE = 500
+    CACHE_TYPE = 'simple'
+    CACHE_DEFAULT_TIMEOUT = 300
+    CACHE_THRESHOLD = 1000  # Used only for SimpleCache and FileSystemCache
     THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
     THECREW_DATE_FORMAT = os.getenv('THECREW_DATE_FORMAT') or '%Y-%m-%d'
     THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10

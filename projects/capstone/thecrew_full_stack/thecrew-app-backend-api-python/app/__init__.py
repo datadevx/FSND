@@ -7,6 +7,7 @@ from flask_migrate import Migrate, migrate
 from flask_cors import CORS
 from flask_bootstrap import Bootstrap
 from flask_compress import Compress
+from flask_caching import Cache
 from werkzeug.exceptions import default_exceptions
 from config import configs
 
@@ -15,6 +16,7 @@ migrate = Migrate()
 cors = CORS()
 bootstrap = Bootstrap()
 compress = Compress()
+cache = Cache()
 
 
 def create_app(config_name):
@@ -26,6 +28,7 @@ def create_app(config_name):
     cors.init_app(app, resources={r'/api/*': {'origins': '*'}})
     bootstrap.init_app(app)
     compress.init_app(app)
+    cache.init_app(app)
 
     from app.main import bp as main_blueprint
     app.register_blueprint(main_blueprint)

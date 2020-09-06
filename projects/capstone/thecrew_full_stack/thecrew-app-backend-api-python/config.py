@@ -17,6 +17,14 @@ class Config(object):
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS') is not None
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    COMPRESS_MIMETYPES = [
+        "text/html",
+        "text/css",
+        "application/json",
+        "application/javascript",
+    ]
+    COMPRESS_LEVEL = 6
+    COMPRESS_MIN_SIZE = 500
     THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
     THECREW_DATE_FORMAT = os.getenv('THECREW_DATE_FORMAT') or '%Y-%m-%d'
     THECREW_OBJECTS_PER_PAGE = os.getenv('THECREW_OBJECTS_PER_PAGE') or 10

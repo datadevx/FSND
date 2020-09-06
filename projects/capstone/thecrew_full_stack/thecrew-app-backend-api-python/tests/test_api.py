@@ -3,7 +3,6 @@ import unittest
 import json
 import requests
 from app import create_app, db
-from settings import load_dotenv
 from app.models import Gender, Actor, Movie
 from app.date import now
 
@@ -12,7 +11,6 @@ _cached_auth_headers = {'token': {}, 'token_date': None, 'token_scope': None}
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
-        load_dotenv()
         self.app = create_app('testing')
         self.app_context = self.app.app_context()
         self.app_context.push()

@@ -5,6 +5,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config(object):
     SECRET_KEY = os.getenv('SECRET_KEY') or '280b97464ef14bda8f4623d555339f1b'
+    FLASK_APP = os.getenv('FLASK_APP')
+    FLASK_ENV = os.getenv('FLASK_ENV')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = os.getenv('SQLALCHEMY_RECORD_QUERIES') or True
     THECREW_API_VERSION = os.getenv('THECREW_API_VERSION') or 'v1'
@@ -17,7 +19,6 @@ class Config(object):
 
 class TestingConfig(Config):
     TESTING = True
-    PREFERRED_URL_SCHEME = 'https'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///'
     AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')
     AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET')

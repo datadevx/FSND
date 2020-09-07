@@ -1,5 +1,12 @@
-from flask import render_template
+from flask import redirect, render_template
 from app.main import bp
+from app.auth0 import build_authorize_url
+
+
+@bp.route('/login', methods=['GET'])
+@bp.route('/signup', methods=['GET'])
+def login():
+    return redirect(build_authorize_url())
 
 
 @bp.route('/', methods=['GET'])

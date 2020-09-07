@@ -12,6 +12,7 @@ class Config(object):
     AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
     AUTH0_API_AUDIENCE = os.getenv('AUTH0_API_AUDIENCE')
     AUTH0_ALGORITHMS = ['RS256']
+    AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = int(os.getenv('MAIL_PORT') or 25)
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS') is not None
@@ -39,7 +40,6 @@ class Config(object):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///'
-    AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')
     AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET')
     AUTH0_GRANT_TYPE = os.getenv('AUTH0_GRANT_TYPE')
 

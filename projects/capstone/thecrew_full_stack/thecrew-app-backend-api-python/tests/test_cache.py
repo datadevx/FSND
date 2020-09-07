@@ -13,15 +13,15 @@ class CacheTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def test_cache_is_enabled(self):
-        from flask_caching.backends.simplecache import SimpleCache
+        from flask_caching.backends.rediscache import RedisCache
         self.assertTrue(
-            isinstance(self.app.extensions['cache'][cache], SimpleCache))
+            isinstance(self.app.extensions['cache'][cache], RedisCache))
 
     def test_cache_type(self):
-        self.assertEqual(self.app.config['CACHE_TYPE'], 'simple')
+        self.assertEqual(self.app.config['CACHE_TYPE'], 'redis')
 
     def test_cache_timeout(self):
         self.assertEqual(self.app.config['CACHE_DEFAULT_TIMEOUT'], 300)
 
-    def test_cache_threshold(self):
-        self.assertEqual(self.app.config['CACHE_THRESHOLD'], 1000)
+    def test_cache_redis(self):
+        self.assertIsNotNone(self.app.config['CACHE_REDIS_URL'])

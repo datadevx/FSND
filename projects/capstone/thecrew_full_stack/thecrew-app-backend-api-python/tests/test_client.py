@@ -1,17 +1,11 @@
 import unittest
-from app import create_app
+from tests import BaseAPITestCase
 
 
-class ClientTestCase(unittest.TestCase):
+class ClientTestCase(BaseAPITestCase):
     def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        self.client = self.app.test_client()
+        super().setUp()
         self.client = self.app.test_client(use_cookies=True)
-
-    def tearDown(self):
-        self.app_context.pop()
 
     def test_login(self):
         response = self.client.get('/login')
@@ -40,3 +34,7 @@ class ClientTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue('Welcome to TheCrew' in response.get_data(
             as_text=True))
+
+
+if __name__ == '__main__':
+    unittest.main()

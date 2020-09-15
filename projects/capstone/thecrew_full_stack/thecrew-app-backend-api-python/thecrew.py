@@ -1,12 +1,7 @@
-import os
-from settings import load_dotenv
-
-load_dotenv()
-
 from app import create_app, db
 from app.models import Movie, Actor, Gender, movies_actors
 
-app = create_app(os.getenv('FLASK_CONFIG') or 'default')
+app = create_app()
 
 
 @app.shell_context_processor

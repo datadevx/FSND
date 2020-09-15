@@ -1,17 +1,11 @@
 import unittest
-from app import create_app, cache
+from datetime import datetime
+from tests import BaseAPITestCase
+from app import cache
+from app.models import Movie
 
 
-class CacheTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        self.client = self.app.test_client()
-
-    def tearDown(self):
-        self.app_context.pop()
-
+class CacheTestCase(BaseAPITestCase):
     def test_cache_is_enabled(self):
         from flask_caching.backends.rediscache import RedisCache
         self.assertTrue(
@@ -25,3 +19,15 @@ class CacheTestCase(unittest.TestCase):
 
     def test_cache_redis(self):
         self.assertIsNotNone(self.app.config['CACHE_REDIS_URL'])
+
+    def test_can_cache(self):
+        movie = Movie(title='Dil Bechara', release_date=datetime(2020, 7, 24))
+        cache.add('new_movie', movie)
+        self.assertEqual(cache.get('new_movie').title, 'Dil Bechara')
+        self.assertEqual(
+            cache.get('new_movie').release_date.date(),
+            datetime(2020, 7, 24).date())
+
+
+if __name__ == '__main__':
+    unittest.main()

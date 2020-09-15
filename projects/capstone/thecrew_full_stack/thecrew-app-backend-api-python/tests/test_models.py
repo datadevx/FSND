@@ -1,26 +1,14 @@
 import unittest
 import uuid
 from datetime import datetime
-from app import create_app, db
+from app import db
+from tests import BaseDBTestCase
 from app.models import Gender, Actor, Movie
 from app.date import date_to_str, now
 from app.exceptions import ValidationsError
 
 
-class BaseModelTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
-
-class GenderCrudTestCase(BaseModelTestCase):
+class GenderCrudTestCase(BaseDBTestCase):
     def test_crud(self):
         female = Gender(name='Female')
         male = Gender(name='Male')
@@ -51,7 +39,7 @@ class GenderCrudTestCase(BaseModelTestCase):
         self.assertFalse(Actor.query.all())
 
 
-class ActorCrudTestCase(BaseModelTestCase):
+class ActorCrudTestCase(BaseDBTestCase):
     def test_crud(self):
         female = Gender(name='Female')
         male = Gender(name='Male')
@@ -318,7 +306,7 @@ class ActorCrudTestCase(BaseModelTestCase):
             validation_error.get_error('custom', 'already_exists').description)
 
 
-class MovieCrudTestCase(BaseModelTestCase):
+class MovieCrudTestCase(BaseDBTestCase):
     def test_crud(self):
         female = Gender(name='Female')
         male = Gender(name='Male')
@@ -677,3 +665,7 @@ class MovieCrudTestCase(BaseModelTestCase):
         self.assertIn(
             'already exists',
             validation_error.get_error('custom', 'already_exists').description)
+
+
+if __name__ == '__main__':
+    unittest.main()

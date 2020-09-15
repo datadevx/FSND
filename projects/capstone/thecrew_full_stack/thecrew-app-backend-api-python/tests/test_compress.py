@@ -1,17 +1,8 @@
 import unittest
-from app import create_app
+from tests import BaseAPITestCase
 
 
-class CompressTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        self.client = self.app.test_client()
-
-    def tearDown(self):
-        self.app_context.pop()
-
+class CompressTestCase(BaseAPITestCase):
     def test_mimetypes(self):
         defaults = [
             "text/html",
@@ -36,3 +27,7 @@ class CompressTestCase(unittest.TestCase):
         headers = [("Accept-Encoding", "gzip")]
         response = self.client.options("/", headers=headers)
         self.assertEqual(response.content_encoding, "gzip")
+
+
+if __name__ == '__main__':
+    unittest.main()

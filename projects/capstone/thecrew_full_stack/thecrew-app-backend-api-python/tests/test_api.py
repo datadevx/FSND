@@ -1,32 +1,16 @@
 from datetime import datetime, timedelta
-import unittest
 import json
 import requests
-from app import create_app, db
+import unittest
+from tests import BaseDBWithGendersTestCase
+from app import db
 from app.models import Gender, Actor, Movie
 from app.date import now
 
 _cached_auth_headers = {'token': {}, 'token_date': None, 'token_scope': None}
 
 
-class APITestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app('testing')
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-        Gender.insert_genders()
-        self.client = self.app.test_client()
-        self.endpoints = {
-            'actors': f'/api/{self.app.config["THECREW_API_VERSION"]}/actors',
-            'movies': f'/api/{self.app.config["THECREW_API_VERSION"]}/movies'
-        }
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
+class APITestCase(BaseDBWithGendersTestCase):
     @classmethod
     def setUpClass(cls):
         cls.roles = {
@@ -79,6 +63,10 @@ class APITestCase(unittest.TestCase):
         url = f'https://{self.app.config["AUTH0_DOMAIN"]}/oauth/token'
         payload = self._build_auth_token_payload(scope)
         response = requests.post(url, json=payload)
+        self.assertEqual(
+            response.status_code,
+            200,
+            msg=f'Could not request auth token: {response.reason}')
         self._set_auth_token(response.json(), scope)
 
     def get_api_headers(self, scope=None):
@@ -892,3 +880,7 @@ class APITestCase(unittest.TestCase):
             f'{self.endpoints["movies"]}/{movie.uuid}',
             headers=self.get_api_headers(self.roles['executive_producer']))
         self.assertEqual(response.status_code, 204)
+
+
+if __name__ == '__main__':
+    unittest.main()

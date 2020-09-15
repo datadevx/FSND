@@ -8,8 +8,8 @@ from flask_cors import CORS
 from flask_bootstrap import Bootstrap
 from flask_compress import Compress
 from flask_caching import Cache
+from dynaconf import FlaskDynaconf
 from werkzeug.exceptions import default_exceptions
-from config import configs
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -19,9 +19,9 @@ compress = Compress()
 cache = Cache()
 
 
-def create_app(config_name):
+def create_app(**config):
     app = Flask(__name__)
-    app.config.from_object(configs[config_name])
+    FlaskDynaconf(app, settings_files=['settings.toml'], **config)
 
     db.init_app(app)
     migrate.init_app(app, db)

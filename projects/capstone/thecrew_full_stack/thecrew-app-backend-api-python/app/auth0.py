@@ -14,4 +14,4 @@ def _build_authorize_params():
         'response_type': 'token',
         'client_id': current_app.config['AUTH0_CLIENT_ID'],
         'redirect_uri': url_for('main.welcome_callback', _external=True)
-    })
+    }, safe=':/')

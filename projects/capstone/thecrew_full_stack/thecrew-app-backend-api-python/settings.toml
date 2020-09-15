@@ -1,11 +1,9 @@
 [default]
-FLASK_SECRET_KEY = "280b97464ef14bda8f4623d555339f1b"
 SQLALCHEMY_TRACK_MODIFICATIONS = false
 SQLALCHEMY_RECORD_QUERIES = true
 AUTH0_DOMAIN = "the-crew-fsnd.us.auth0.com"
 AUTH0_API_AUDIENCE = "thecrew-api"
 AUTH0_ALGORITHMS = ['RS256']
-AUTH0_CLIENT_ID = "ZqzyeEBInojE8HKbHC94gM5Sv2xFLRMI"
 MAIL_SERVER = "smtp.googlemail.com"
 MAIL_PORT = 587
 MAIL_USE_TLS = true
@@ -29,14 +27,11 @@ THECREW_ADMINS = ['filipebzerra@gmail.com']
 
 [development]
 DEBUG = true
-AUTH0_CLIENT_ID = "nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b"
 SQLALCHEMY_DATABASE_URI = "@jinja sqlite:///{{'data-dev.sqlite' | abspath}}"
 
 [testing]
 TESTING = true
 SQLALCHEMY_DATABASE_URI = "sqlite://"
-AUTH0_CLIENT_ID = "nHaRDZC2Ro6Qvo2bnj58WmukR2UDHd4b"
-AUTH0_CLIENT_SECRET = "n4ft7fYUgdJIEg0CX1O2VERnaFq2F46NmwAjmNcEV6jyo5Wiz68s0TV7piNYjJCg"
 AUTH0_GRANT_TYPE = "client_credentials"
 
 [production]

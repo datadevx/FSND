@@ -6,7 +6,7 @@ from app.api import bp
 from app.models import Actor
 from app.api.errors import not_found
 from app.auth.auth import auth_required
-from app.integration.flask_caching import redis_is_not_available, delete_memoized
+from app.integrations.flask_caching import redis_is_not_available, delete_memoized
 
 
 @bp.route('/actors')

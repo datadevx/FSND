@@ -6,11 +6,12 @@ from app.api import bp
 from app.models import Actor
 from app.api.errors import not_found
 from app.auth.auth import auth_required
+from app.integration.flask_caching import redis_is_not_available, delete_memoized
 
 
 @bp.route('/actors')
 @auth_required('view:actors')
-@cache.memoize()
+@cache.memoize(unless=redis_is_not_available)
 def get_actors():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit',
@@ -36,7 +37,7 @@ def get_actors():
 
 @bp.route('actors/<string:actor_id>')
 @auth_required('view:actors')
-@cache.memoize()
+@cache.memoize(unless=redis_is_not_available)
 def get_actor(actor_id):
     actor = None
     try:
@@ -52,7 +53,7 @@ def create_actor():
     json_actor = request.json or {}
     actor = Actor.new_from_json(json_actor)
     db.session.commit()
-    cache.delete_memoized(get_actors)
+    delete_memoized(get_actors)
     return jsonify(actor.to_json()), 201, \
         {'Location': url_for('api.get_actor', actor_id=str(actor.uuid))}
 
@@ -68,8 +69,8 @@ def update_actor(actor_id):
     json_actor = request.json or {}
     actor.update_from_json(json_actor)
     db.session.commit()
-    cache.delete_memoized(get_actors)
-    cache.delete_memoized(get_actor, actor_id)
+    delete_memoized(get_actors)
+    delete_memoized(get_actor, actor_id)
     return jsonify(actor.to_json())
 
 
@@ -83,6 +84,6 @@ def delete_actor(actor_id):
         return not_found('please use the correct path parameter')
     db.session.delete(actor)
     db.session.commit()
-    cache.delete_memoized(get_actors)
-    cache.delete_memoized(get_actor, actor_id)
+    delete_memoized(get_actors)
+    delete_memoized(get_actor, actor_id)
     return '', 204

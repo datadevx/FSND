@@ -26,7 +26,6 @@ THECREW_LOG_TO_STDOUT = false
 THECREW_ADMINS = ['filipebzerra@gmail.com']
 
 [development]
-DEBUG = true
 SQLALCHEMY_DATABASE_URI = "@jinja sqlite:///{{'data-dev.sqlite' | abspath}}"
 
 [testing]

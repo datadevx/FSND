@@ -1,18 +1,16 @@
-from redis import exceptions
+from flask import current_app
+from redis import Redis, exceptions
 from app import cache
 
 
 def redis_is_not_available():
-    @cache.memoize()
-    def test_memoize():
-        return "memoize"
-
+    pong = None
     try:
-        test_memoize()
-        cache.delete_memoized(test_memoize)
+        redis_client = Redis.from_url(current_app.config['CACHE_REDIS_URL'])
+        pong = redis_client.ping()
     except exceptions.ConnectionError:
         return True
-    return False
+    return not pong
 
 
 def delete_memoized(f, *args, **kwargs):

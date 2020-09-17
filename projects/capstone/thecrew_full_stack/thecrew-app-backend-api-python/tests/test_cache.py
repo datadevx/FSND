@@ -1,11 +1,18 @@
 import unittest
 from datetime import datetime
+from unittest.case import skipIf
 from tests import BaseAPITestCase
 from app import cache
 from app.models import Movie
+from app.integrations.flask_caching import redis_is_not_available
 
 
 class CacheTestCase(BaseAPITestCase):
+    def setUp(self):
+        super().setUp()
+        if redis_is_not_available():
+            self.skipTest('redis is unavailable')
+
     def test_cache_is_enabled(self):
         from flask_caching.backends.rediscache import RedisCache
         self.assertTrue(

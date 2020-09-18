@@ -12,4 +12,4 @@ def after_request(response):
     return response
 
 
-from app.api import actors, movies, errors
+from app.api import actors, movies, errors  # noqa: E402

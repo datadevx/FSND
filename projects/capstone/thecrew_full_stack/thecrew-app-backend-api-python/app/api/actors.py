@@ -6,7 +6,8 @@ from app.api import bp
 from app.models import Actor
 from app.api.errors import not_found
 from app.auth.auth import auth_required
-from app.integrations.flask_caching import redis_is_not_available, delete_memoized
+from app.integrations.flask_caching import (
+    redis_is_not_available, redis_is_available)
 
 
 @bp.route('/actors')
@@ -14,9 +15,8 @@ from app.integrations.flask_caching import redis_is_not_available, delete_memoiz
 @cache.memoize(unless=redis_is_not_available)
 def get_actors():
     page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit',
-                             current_app.config['THECREW_OBJECTS_PER_PAGE'],
-                             type=int)
+    limit = request.args.get(
+        'limit', current_app.config['THECREW_OBJECTS_PER_PAGE'], type=int)
     pagination = Actor.query.paginate(page, per_page=limit, error_out=False)
 
     result_dict = {
@@ -26,11 +26,11 @@ def get_actors():
         'page': pagination.page
     }
     if pagination.has_prev:
-        result_dict['prevLink'] = url_for('api.get_actors',
-                                          page=pagination.prev_num)
+        result_dict['prevLink'] = url_for(
+            'api.get_actors', page=pagination.prev_num)
     if pagination.has_next:
-        result_dict['nextLink'] = url_for('api.get_actors',
-                                          page=pagination.next_num)
+        result_dict['nextLink'] = url_for(
+            'api.get_actors', page=pagination.next_num)
 
     return jsonify(result_dict)
 
@@ -53,7 +53,8 @@ def create_actor():
     json_actor = request.json or {}
     actor = Actor.new_from_json(json_actor)
     db.session.commit()
-    delete_memoized(get_actors)
+    if redis_is_available():
+        cache.delete_memoized(get_actors)
     return jsonify(actor.to_json()), 201, \
         {'Location': url_for('api.get_actor', actor_id=str(actor.uuid))}
 
@@ -69,8 +70,9 @@ def update_actor(actor_id):
     json_actor = request.json or {}
     actor.update_from_json(json_actor)
     db.session.commit()
-    delete_memoized(get_actors)
-    delete_memoized(get_actor, actor_id)
+    if redis_is_available():
+        cache.delete_memoized(get_actors)
+        cache.delete_memoized(get_actor, actor_id)
     return jsonify(actor.to_json())
 
 
@@ -84,6 +86,7 @@ def delete_actor(actor_id):
         return not_found('please use the correct path parameter')
     db.session.delete(actor)
     db.session.commit()
-    delete_memoized(get_actors)
-    delete_memoized(get_actor, actor_id)
+    if redis_is_available():
+        cache.delete_memoized(get_actors)
+        cache.delete_memoized(get_actor, actor_id)
     return '', 204

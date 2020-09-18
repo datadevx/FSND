@@ -1,6 +1,9 @@
 from flask import current_app
 from redis import Redis, exceptions
-from app import cache
+
+
+def redis_is_available():
+    return redis_is_not_available() == False
 
 
 def redis_is_not_available():
@@ -11,10 +14,3 @@ def redis_is_not_available():
     except exceptions.ConnectionError:
         return True
     return not pong
-
-
-def delete_memoized(f, *args, **kwargs):
-    try:
-        cache.delete_memoized(f, args, kwargs)
-    except exceptions.ConnectionError:
-        pass

@@ -8,18 +8,20 @@ from app.auth.errors import AuthError
 def get_token_auth_header():
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        raise AuthError('authorization_header_missing',
-                        'Authorization header is expected', 401)
+        raise AuthError(
+            'authorization_header_missing', 'Authorization header is expected',
+            401)
 
     auth_header_parts = auth_header.split()
     if auth_header_parts[0].lower() != 'bearer':
-        raise AuthError('invalid_header',
-                        'Authorization header must start with Bearer', 401)
+        raise AuthError(
+            'invalid_header', 'Authorization header must start with Bearer',
+            401)
     elif len(auth_header_parts) == 1:
         raise AuthError('invalid_header', 'Token not found', 401)
     elif len(auth_header_parts) > 2:
-        raise AuthError('invalid_header',
-                        'Authorization header must be Bearer token', 401)
+        raise AuthError(
+            'invalid_header', 'Authorization header must be Bearer token', 401)
     return auth_header_parts[1]
 
 
@@ -55,24 +57,24 @@ def verify_decode_jwt(token):
             raise AuthError('token_expired', 'Token expired', 401)
         except jwt.JWTClaimsError:
             raise AuthError(
-                'invalid_claims',
-                'Incorrect claims. Please, check the audience, issuer or algorithm',
-                401)
+                'invalid_claims', (
+                    'Incorrect claims. Please, check the audience, '
+                    'issuer or algorithm'), 401)
         except jwt.JWTError:
             raise AuthError(
                 'invalid_token',
                 'Incorrect token. Please, check the provided token', 401)
         except Exception:
-            raise AuthError('invalid_header',
-                            'Unable to parse authentication token', 400)
-    raise AuthError('invalid_header', 'Unable to find the appropriate key',
-                    400)
+            raise AuthError(
+                'invalid_header', 'Unable to parse authentication token', 400)
+    raise AuthError(
+        'invalid_header', 'Unable to find the appropriate key', 400)
 
 
 def check_permission(permission, payload):
     if 'permissions' not in payload:
-        raise AuthError('invalid_claims',
-                        'Permissions not included in the token', 403)
+        raise AuthError(
+            'invalid_claims', 'Permissions not included in the token', 403)
     if permission not in payload['permissions']:
         raise AuthError('unauthorized', 'Permission not found', 403)
     return True

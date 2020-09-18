@@ -21,12 +21,13 @@ class PrerequisitesTestCase(BaseDBWithGendersTestCase):
 
     def test_db_is_writable(self):
         db.session.execute(
-            'INSERT INTO movies (uuid, title, release_date) VALUES (:uuid, :title, :release_date)',
-            {
-                'uuid': str(uuid4()),
-                'title': 'Dil Bechara',
-                'release_date': '2020-07-24'
-            })
+            (
+                'INSERT INTO movies (uuid, title, release_date) '
+                'VALUES (:uuid, :title, :release_date)'), {
+                    'uuid': str(uuid4()),
+                    'title': 'Dil Bechara',
+                    'release_date': '2020-07-24'
+                })
         result = db.session.execute(
             'SELECT * FROM movies WHERE title = :title',
             {'title': 'Dil Bechara'})

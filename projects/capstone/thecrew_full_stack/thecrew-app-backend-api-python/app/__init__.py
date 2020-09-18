@@ -83,5 +83,5 @@ def create_app(**config):
     return app
 
 
-from app import models
-from app.api.errors import handle_http_exception
+from app import models  # noqa: E402
+from app.api.errors import handle_http_exception  # noqa: E402

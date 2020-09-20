@@ -100,21 +100,21 @@ Also you'll have to create two [environment variables](https://learning.postman.
 
 The TheCrew API is organized around [REST](http://en.wikipedia.org/wiki/Representational_State_Transfer). The API has predictable resource-oriented URLs, accepts JSON-encoded request bodies, returns JSON-encoded responses, and uses standard HTTP response codes, and verbs.
 
+You can check out our [API Design](https://docs.google.com/spreadsheets/d/1vS6z2x_Kn3N3y6zgd3WIrYpgtDUmE5qAxnwiaXKJ11E/edit?usp=sharing) documentation.
+
 ### Base URL
 
 TheCrew API is currently hosted at Heroku under the followig base URL:
 
-```
-https://thecrew-app.herokuapp.com/
-```
+> [https://thecrew-app.herokuapp.com/](https://thecrew-app.herokuapp.com/)
 
 ### API Reference
 
 You can check out the complete API Reference by using the Swagger documentation
 
-```
-https://thecrew-app.herokuapp.com/apidocs
-```
+
+> [https://thecrew-app.herokuapp.com/apidocs](https://thecrew-app.herokuapp.com/apidocs)
+
 
 ### Authentication
 

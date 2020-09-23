@@ -1,3 +1,10 @@
+"""Utility methods to call auth0 services.
+
+    build_authorize_url(): Create URL to the Authorization Code Flow.
+"""
+
+__author__ = "Filipe Bezerra de Sousa"
+
 from urllib.parse import urlencode, urlunsplit
 from flask import current_app, url_for
 

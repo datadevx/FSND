@@ -1,3 +1,8 @@
+"""Exceptions used for authentication and validation verification."""
+
+__author__ = "Filipe Bezerra de Sousa"
+
+
 class AuthError(Exception):
     def __init__(self, code, description, status_code):
         self.code = code

@@ -1,3 +1,7 @@
+"""Route decorators responsible for routing URLs to the appropriate web page."""
+
+__author__ = "Filipe Bezerra de Sousa"
+
 from flask import redirect, render_template
 from app.main import bp
 from app.integrations.auth0 import build_authorize_url

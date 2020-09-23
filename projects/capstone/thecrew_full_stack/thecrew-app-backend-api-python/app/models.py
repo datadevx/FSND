@@ -1,5 +1,12 @@
+"""Classes responsible for holding data and performing intrinsic validations.
+
+    Actor.new_from_json(): Create a new instance of an Actor from json data.
+    Movie.new_from_json(): Create a new instance of an Movie from json data
+"""
+
+__author__ = "Filipe Bezerra de Sousa"
+
 import uuid
-from flask.globals import current_app
 from sqlalchemy.orm import exc
 from sqlalchemy_utils import UUIDType
 from app import db

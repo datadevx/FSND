@@ -1,3 +1,11 @@
+"""Authentication and authorization for the API routes.
+
+    auth_required(permission): Decorates routes and check if the user has access 
+    and permissions.
+"""
+
+__author__ = "Filipe Bezerra de Sousa"
+
 from functools import wraps
 from flask import request, current_app
 from jose import jwt

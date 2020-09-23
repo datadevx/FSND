@@ -1,3 +1,8 @@
+"""Exceptions used for data validation."""
+
+__author__ = "Filipe Bezerra de Sousa"
+
+
 class ValidationError(ValueError):
     def __init__(self, field, code, description):
         self.field = field
@@ -20,8 +25,9 @@ class ValidationsError(Exception):
         return bool(self.errors)
 
     def get_error(self, field, code):
-        return next(filter(lambda x: x.field == field and x.code == code,
-                           self.errors), None)
+        return next(
+            filter(lambda x: x.field == field and x.code == code, self.errors),
+            None)
 
     def __repr__(self):
         return f'<ValidationsError {self.message}; errors={self.errors}>'

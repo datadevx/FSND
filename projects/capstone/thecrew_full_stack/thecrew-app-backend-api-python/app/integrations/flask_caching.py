@@ -1,3 +1,8 @@
+"""Utility methods to check Redis server.
+
+    redis_is_available(): Verify if the Redis server is available.
+"""
+
 from flask import current_app
 from redis import Redis, exceptions
 

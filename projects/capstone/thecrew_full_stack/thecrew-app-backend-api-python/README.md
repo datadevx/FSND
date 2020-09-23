@@ -106,7 +106,7 @@ You can check out our [API Design](https://docs.google.com/spreadsheets/d/1vS6z2
 
 TheCrew API is currently hosted at Heroku under the followig base URL:
 
-> [https://thecrew-app.herokuapp.com/](https://thecrew-app.herokuapp.com/)
+> [https://thecrew-app.herokuapp.com/api](https://thecrew-app.herokuapp.com/api)
 
 ### API Reference
 
@@ -237,6 +237,10 @@ No parameters.
 
 A dictionary with a `objects` attribute which is the list of actors and a `page`, `totalCount`, `totalPages` meta attributes.
 
+If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
+
+If something goes wrong within our end this call returns a `500` [error](#Errors).
+
 ###### Request `GET` /actors
 
 ```bash
@@ -283,6 +287,12 @@ A `ID` of a existing actor. The value must be a `string`.
 ###### Returns
 
 A dictionary with the actor attributes.
+
+If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
+
+If the actor `ID` does not exist or using an invalid format, this call returns a `404` [error](#Errors).
+
+If something goes wrong within our end this call returns a `500` [error](#Errors).
 
 ###### Request `GET` /actors/<ID>
 
@@ -397,6 +407,8 @@ If all attributes were missing this call returns a `400` [error](#Errors).
 
 If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
 
+If the actor `ID` does not exist or using an invalid format, this call returns a `404` [error](#Errors).
+
 If something goes wrong within our end this call returns a `500` [error](#Errors).
 
 ###### Request `PATCH` /actors/<ID>
@@ -439,7 +451,7 @@ A 204 NO CONTENT http status.
 
 If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
 
-If the question `ID` does not exist, this call returns a `404` [error](#Errors).
+If the actor `ID` does not exist, this call returns a `404` [error](#Errors).
 
 If something goes wrong within our end this call returns a `500` [error](#Errors).
 
@@ -469,6 +481,10 @@ No parameters.
 ###### Returns
 
 A dictionary with a `objects` attribute which is the list of movies and a `page`, `totalCount`, `totalPages` meta attributes.
+
+If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
+
+If something goes wrong within our end this call returns a `500` [error](#Errors).
 
 ###### Request `GET` /movies
 
@@ -579,6 +595,12 @@ A `ID` of a existing movie. The value must be a `string`.
 ###### Returns
 
 A dictionary with the movie attributes.
+
+If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
+
+If the movie `ID` does not exist or using an invalid format, this call returns a `404` [error](#Errors).
+
+If something goes wrong within our end this call returns a `500` [error](#Errors).
 
 ###### Request `GET` /movies/<ID>
 
@@ -813,6 +835,8 @@ If all attributes were missing, or the movie already exists this call returns a 
 
 If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
 
+If the actor `ID` does not exist or using an invalid format, this call returns a `404` [error](#Errors).
+
 If something goes wrong within our end this call returns a `500` [error](#Errors).
 
 ###### Request `PATCH` /movies/<ID>
@@ -904,7 +928,7 @@ A 204 NO CONTENT http status.
 
 If the user is not authenticated or is not allowed to access that resource, this call returns either a `401` or `403` [error](#Errors).
 
-If the question `ID` does not exist, this call returns a `404` [error](#Errors).
+If the movie `ID` does not exist or using an invalid format, this call returns a `404` [error](#Errors).
 
 If something goes wrong within our end this call returns a `500` [error](#Errors).
 

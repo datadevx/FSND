@@ -1,3 +1,7 @@
+"""Handle HTTP and data validation errors."""
+
+__author__ = "Filipe Bezerra de Sousa"
+
 from flask import jsonify, request
 from werkzeug.http import HTTP_STATUS_CODES
 from app.api import bp
@@ -7,11 +11,13 @@ from app.auth.errors import AuthError
 
 @bp.errorhandler(ValidationsError)
 def handle_validation_error(error):
-    errors = [{
-        'field': e.field,
-        'code': e.code,
-        'description': e.description
-    } for e in error.errors]
+    errors = [
+        {
+            'field': e.field,
+            'code': e.code,
+            'description': e.description
+        } for e in error.errors
+    ]
     return error_response(400, error.message, errors)
 
 

@@ -15,6 +15,10 @@ from app.exceptions import ValidationsError
 
 
 class UUIDSupportModel(db.Model):
+    """Mixin model to support a UUID column.
+    It declares either a `ID` column as primary key and a `uuid` column as a 
+    string default to `uuid.uuid4`.
+    """
     __abstract__ = True
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(
@@ -24,19 +28,33 @@ class UUIDSupportModel(db.Model):
         default=uuid.uuid4)
 
     def __eq__(self, other):
+        """Compare two instances of a model using their `ID` column.
+        
+        :param other: The other instance of a mode to compare to.
+        :return: True if both are equal, False otherwise.
+        """
         if isinstance(other, type(self)):
             return self.id == other.id
 
 
 class Gender(UUIDSupportModel, db.Model):
+    """Gender model, a persistent entity which extends the base SQLAlchemy Model.
+
+    Each instances of a gender is associated with a Actor instance.
+    """
     __tablename__ = 'genders'
     name = db.Column(db.String(30), nullable=False, unique=True)
 
     def __repr__(self):
+        """Simple string representation of a gender instance.
+
+        :return: The string representation of this gender.
+        """
         return f'<Gender {self.name}>'
 
     @staticmethod
     def insert_genders():
+        """Populate `genders` table with predefined data."""
         db.session.add_all(
             [
                 Gender(name='Female'),
@@ -55,6 +73,10 @@ movies_actors = db.Table(
 
 
 class Actor(UUIDSupportModel, db.Model):
+    """Actor model, a persistent entity which extends the base SQLAlchemy Model.
+
+    Many instances of a actor could be associated with a Movie instance.
+    """
     __tablename__ = 'actors'
     age = db.Column(db.Integer)
     full_name = db.Column(db.String(60), nullable=False)
@@ -63,9 +85,17 @@ class Actor(UUIDSupportModel, db.Model):
         db.Integer, db.ForeignKey('genders.id'), nullable=False)
 
     def __repr__(self):
+        """Simple string representation of a actor instance.
+
+        :return: The string representation of this actor.
+        """
         return f'<Actor {self.full_name}>'
 
     def to_json(self):
+        """Convert this actor instance into a flat dict format.
+
+        :return: A dict containing only specific properties of an actor.
+        """
         return {
             'age': self.age,
             'fullName': self.full_name,
@@ -75,6 +105,13 @@ class Actor(UUIDSupportModel, db.Model):
         }
 
     def update_from_json(self, json_actor):
+        """Take this instance and update it with new data.
+
+        May raise several validation errors through a
+        :class:`exceptions.ValidationsError` exception.
+
+        :param json_actor: A dict containing the new data.
+        """
         validation = ValidationsError('Validation failed')
         if not json_actor:
             validation.add_error(
@@ -119,6 +156,15 @@ class Actor(UUIDSupportModel, db.Model):
 
     @staticmethod
     def new_from_json(json_actor):
+        """Create a new instance and assign it new data.
+
+        May raise several validation errors through a
+        :class:`exceptions.ValidationsError` exception.
+
+        :param json_actor: A dict containing the new data.
+        :raises ValidationsError: If some constraint is violated.
+        :return: A new instance of :class:`Actor`.
+        """
         gender_name = json_actor.get('gender')
         full_name = json_actor.get('fullName')
         age = json_actor.get('age')
@@ -162,6 +208,10 @@ class Actor(UUIDSupportModel, db.Model):
 
 
 class Movie(UUIDSupportModel, db.Model):
+    """Movie model, a persistent entity which extends the base SQLAlchemy Model.
+
+    Each instance of a movie associates many instances of actors.
+    """
     __tablename__ = 'movies'
     title = db.Column(db.String(140), nullable=False)
     release_date = db.Column(db.Date, nullable=False)
@@ -172,9 +222,17 @@ class Movie(UUIDSupportModel, db.Model):
         lazy='dynamic')
 
     def __repr__(self):
+        """Simple string representation of a movie instance.
+
+        :return: The string representation of this movie.
+        """
         return f'<Movie {self.title}>'
 
     def to_json(self):
+        """Convert this movie instance into a flat dict format.
+
+        :return A flat dict containing only specific properties of a movie.
+        """
         return {
             'actors': [actor.to_json() for actor in self.actors],
             'releaseDate': date_to_str(self.release_date),
@@ -183,6 +241,13 @@ class Movie(UUIDSupportModel, db.Model):
         }
 
     def update_from_json(self, json_movie):
+        """Take this instance and update it with new data.
+
+        May raise several validation errors through a
+        :class:`exceptions.ValidationsError` exception.
+
+        :param json_actor: A dict containing the new data.
+        """
         validation = ValidationsError('Validation failed')
         if not json_movie:
             validation.add_error(
@@ -238,6 +303,15 @@ class Movie(UUIDSupportModel, db.Model):
 
     @staticmethod
     def new_from_json(json_movie):
+        """Create a new instance and assign it new data.
+
+        May raise several validation errors through a
+        :class:`exceptions.ValidationsError` exception.
+
+        :param json_actor: A dict containing the new data.
+        :raises ValidationsError: If some constraint is violated.
+        :return: A new instance of :class:`Movie`.
+        """
         title = json_movie.get('title')
         release_date_string = json_movie.get('releaseDate')
         actors_json = json_movie.get('actors')

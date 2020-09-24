@@ -14,6 +14,11 @@ from app.auth.errors import AuthError
 
 
 def get_token_auth_header():
+    """Attempt to get the header from the request.
+    
+    :return: The token part of the header.
+    :raises AuthError: If the JWT token can't be parsed.
+    """
     auth_header = request.headers.get('Authorization')
     if not auth_header:
         raise AuthError(
@@ -34,6 +39,14 @@ def get_token_auth_header():
 
 
 def verify_decode_jwt(token):
+    """Verifies a JWT string’s signature and validates reserved claims.
+    
+    :param token: The JWT token.
+    :return: The dict representation of the claims set, assuming the signature
+     is valid and all requested data validation passes.
+    :raises AuthError: If the token is malformed, expired or have incorrect
+     claims.
+    """
     try:
         unverified_header = jwt.get_unverified_header(token)
         if 'kid' not in unverified_header:
@@ -80,6 +93,14 @@ def verify_decode_jwt(token):
 
 
 def check_permission(permission, payload):
+    """Check if the requested permission string is in the payload permissions
+    array.
+
+    :param permission: The requested permission string.
+    :param payload: The payload  dict containing parsed JWT.
+    :return: True if the requested permission is allowed, False otherwise.
+    :raises AuthError: If the provided permission is not allowed.
+    """
     if 'permissions' not in payload:
         raise AuthError(
             'invalid_claims', 'Permissions not included in the token', 403)
@@ -89,6 +110,13 @@ def check_permission(permission, payload):
 
 
 def auth_required(permission=None):
+    """Require auth get, decode, verify the "Bearer token" and check the
+    permission.
+
+    :param permission: The requested permission string.
+    :return: The auth required decorator function without the header
+     payload.
+    """
     def auth_required_decorator(f):
         @wraps(f)
         def auth_required_wrapper(*args, **kwargs):

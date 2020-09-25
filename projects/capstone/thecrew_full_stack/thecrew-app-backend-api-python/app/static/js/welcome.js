@@ -32,4 +32,45 @@ jQuery(document).ready(function ($) {
 
   // custom code
 
+  // Instantiate clipboard.js
+  var clipboard = new ClipboardJS('#copy-access-token');
+
+  clipboard.on('success', function (e) {
+    $('#copy-access-token').attr('data-original-title', 'Copied!');
+    $('#copy-access-token').tooltip({
+      placement: 'bottom',
+      title: 'Copied!',
+      trigger: 'hover'
+    }).tooltip('enable').tooltip('show');
+
+    e.clearSelection();
+  });
+
+  clipboard.on('error', function (e) {
+    console.error('Action:', e.action);
+    console.error('Trigger:', e.trigger);
+  });
+
+  $('#copy-access-token').on('hidden.bs.tooltip', function () {
+    $(this).attr('data-original-title', 'Click to copy');
+    $(this).tooltip('disable');
+  });
+
+  function getHashURLParam(param) {
+    const hash = window.location.hash.substr(1);
+    if (hash && hash !== '') {
+      const prs = hash.split('&').reduce(function (res, item) {
+        const parts = item.split('=');
+        res[parts[0]] = parts[1];
+        return res;
+      }, {});
+      return prs[param];
+    }
+  }
+
+  const accessToken = getHashURLParam('access_token');
+  if (accessToken && accessToken !== '') {
+    $('#copy-access-token').attr('data-clipboard-text', accessToken);
+    $('#copy-access-token').removeClass('invisible');
+  }
 });

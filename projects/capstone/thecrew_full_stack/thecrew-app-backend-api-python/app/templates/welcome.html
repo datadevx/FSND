@@ -57,6 +57,9 @@
       <h2>Welcome to TheCrew</h2>
       <p>We are a fast-growing casting agency company. Our job to create movies and manage and assign actors to those
         movies</p>
+      <button type="button" id="copy-access-token" class="btn btn-info invisible">
+        Copy access token to clipboard
+      </button>
     </div>
 
     <div class="product-screens">
@@ -105,6 +108,7 @@
   {{ bootstrap.load_js() }}
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>
   {{ render_static('js', 'js/welcome.js') }}
   {% endblock %}
 </body>

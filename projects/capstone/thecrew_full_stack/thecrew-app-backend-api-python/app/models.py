@@ -55,12 +55,15 @@ class Gender(UUIDSupportModel, db.Model):
     @staticmethod
     def insert_genders():
         """Populate `genders` table with predefined data."""
-        db.session.add_all(
-            [
-                Gender(name='Female'),
-                Gender(name='Male'),
-                Gender(name='Another')
-            ])
+        genders = [
+            Gender(name='Female'),
+            Gender(name='Male'),
+            Gender(name='Another')
+        ]
+        for gender in genders:
+            found = Gender.query.filter_by(name=gender.name).first()
+            if found is None:
+                db.session.add(gender)
         db.session.commit()
 
 

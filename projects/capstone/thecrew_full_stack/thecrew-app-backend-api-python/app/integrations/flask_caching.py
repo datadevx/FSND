@@ -21,6 +21,8 @@ def redis_is_not_available():
     
     :return: True if it's not configured or not reachable, False otherwise.
     """
+    if not current_app.config['CACHE_REDIS_URL']:
+        return True
     pong = None
     try:
         redis_client = Redis.from_url(current_app.config['CACHE_REDIS_URL'])

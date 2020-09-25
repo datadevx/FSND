@@ -42,7 +42,10 @@ def create_app(**config):
     """
     app = Flask(__name__)
     FlaskDynaconf(
-        app, settings_files=['settings.toml', '.secrets.toml'], **config)
+        app,
+        settings_files=['settings.toml', '.secrets.toml'],
+        load_dotenv=False,
+        **config)
 
     db.init_app(app)
     migrate.init_app(app, db)

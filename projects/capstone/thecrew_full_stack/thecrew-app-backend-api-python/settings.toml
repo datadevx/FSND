@@ -18,7 +18,6 @@ COMPRESS_MIN_SIZE = 500
 CACHE_TYPE = "redis"
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_KEY_PREFIX = "cache."
-CACHE_REDIS_URL = "redis://localhost:6379/0"
 THECREW_API_VERSION = "v1"
 THECREW_DATE_FORMAT = "%Y-%m-%d"
 THECREW_OBJECTS_PER_PAGE = 10
@@ -27,6 +26,7 @@ THECREW_ADMINS = ['filipebzerra@gmail.com']
 
 [development]
 SQLALCHEMY_DATABASE_URI = "@jinja sqlite:///{{'data-dev.sqlite' | abspath}}"
+CACHE_REDIS_URL = "redis://localhost:6379/0"
 
 [testing]
 TESTING = true

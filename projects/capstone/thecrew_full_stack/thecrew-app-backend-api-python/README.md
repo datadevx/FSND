@@ -106,7 +106,7 @@ You can check out our [API Design](https://docs.google.com/spreadsheets/d/1vS6z2
 
 TheCrew API is currently hosted at Heroku under the followig base URL:
 
-> [https://thecrew-app.herokuapp.com/api](https://thecrew-app.herokuapp.com/api)
+> [https://thecrew-app.herokuapp.com/api/v1](https://thecrew-app.herokuapp.com/api/v1)
 
 ### API Reference
 

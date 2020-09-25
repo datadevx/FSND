@@ -11,6 +11,7 @@ The code follows [PEP 8 style guide](https://pep8.org/).
 
 __author__ = "Filipe Bezerra de Sousa"
 
+from flask_migrate import upgrade
 from app import create_app, db
 from app.models import Movie, Actor, Gender, movies_actors
 
@@ -26,6 +27,15 @@ def make_shell_context():
         'Gender': Gender,
         'movies_actors': movies_actors
     }
+
+
+@app.cli.command()
+def deploy():
+    """Run deployment tasks."""
+    # Migrate database to latest version
+    upgrade()
+    # Create or update genders
+    Gender.insert_genders()
 
 
 if __name__ == '__main__':

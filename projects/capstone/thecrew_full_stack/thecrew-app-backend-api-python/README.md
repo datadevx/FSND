@@ -89,11 +89,11 @@ To automatically test the application you can execute `unittest` command to run 
 python -m unittest discover -v -s ./tests -p test*.py
 ```
 
-You can also manually test the application, first import the file `thecrew-api-backend.postman_collection.json` from the `backend` folder to [Postman](https://www.postman.com/downloads/) and then use the [Collection Runner](https://learning.postman.com/docs/postman/collection-runs/starting-a-collection-run/) to run all tests.
+You can also manually test the application, first import the file [thecrew-api-backend.postman_collection.json](thecrew-api-backend.postman_collection.json) from the `backend` folder to [Postman](https://www.postman.com/downloads/) and then use the [Collection Runner](https://learning.postman.com/docs/postman/collection-runs/starting-a-collection-run/) to run all tests.
 
 Also you'll have to create two [environment variables](https://learning.postman.com/docs/sending-requests/variables/) within Postman:
 
-- `host`: The API address. For production set the value to `thecrew-app.herokuapp.com` or in development set `127.0.0.1:5000`
+- `host`: The API address. For production set the value to `https://thecrew-app.herokuapp.com` or in development set `http://127.0.0.1:5000`
 - `token`: The [authentication](#Authentication) required to send requests
 
 ## API Reference
@@ -122,7 +122,7 @@ The TheCrew API uses JSON Web Token (JWT) to authenticate requests.
 
 Users need to authenticate via bearer auth (e.g., for a cross-origin request), use `-H "Authorization: Bearer token`.
 
-Using Postman within the `thecrew-api-backend.postman_collection.json` Postman collections there's a **Get Token** request that you'll have to send in order to have a token to follow along with all requests to the API.
+Using Postman within the [thecrew-api-backend.postman_collection.json](thecrew-api-backend.postman_collection.json) Postman collections there's a **Get Token** request that you'll have to send in order to have a token to follow along with all requests to the API.
 
 After sending the **Get Token** request, within the body response copy the giant sequence of characters from the key `access_token` and update the value of the `token` [environment variable](https://learning.postman.com/docs/sending-requests/variables/) created in Postman.
 

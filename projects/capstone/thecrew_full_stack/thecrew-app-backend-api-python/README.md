@@ -106,15 +106,15 @@ You can check out our [API Design](https://docs.google.com/spreadsheets/d/1vS6z2
 
 TheCrew API is currently hosted at Heroku under the followig base URL:
 
-> [https://thecrew-app.herokuapp.com/api/v1](https://thecrew-app.herokuapp.com/api/v1)
+<pre><code>https://thecrew-app.herokuapp.com/api/v1</code></pre>
 
 ### API Reference
 
 You can check out the complete API Reference by using the Swagger documentation
 
-
-> [https://thecrew-app.herokuapp.com/apidocs](https://thecrew-app.herokuapp.com/apidocs)
-
+<prev><code>
+[https://thecrew-app.herokuapp.com/apidocs](https://thecrew-app.herokuapp.com/apidocs)
+</code></prev>
 
 ### Authentication
 

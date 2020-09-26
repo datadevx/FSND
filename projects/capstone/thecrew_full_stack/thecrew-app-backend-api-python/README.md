@@ -89,12 +89,26 @@ To automatically test the application you can execute `unittest` command to run 
 python -m unittest discover -v -s ./tests -p test*.py
 ```
 
-You can also manually test the application, first import the file [thecrew-api-backend.postman_collection.json](thecrew-api-backend.postman_collection.json) from the `backend` folder to [Postman](https://www.postman.com/downloads/) and then use the [Collection Runner](https://learning.postman.com/docs/postman/collection-runs/starting-a-collection-run/) to run all tests.
+### Testing the API
 
-Also you'll have to create two [environment variables](https://learning.postman.com/docs/sending-requests/variables/) within Postman:
+You can test the API using the [Postman](https://www.postman.com/downloads/).
+
+The button bellow redirects you to web version of the API documentation, you must create a postman account for you.
+
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/bb9a373a31eaf0c380d7#?env%5BTheCrew%20App%20Heroku%5D=W3sia2V5IjoiaG9zdCIsInZhbHVlIjoiaHR0cHM6Ly90aGVjcmV3LWFwcC5oZXJva3VhcHAuY29tIiwiZW5hYmxlZCI6dHJ1ZX0seyJrZXkiOiJ0b2tlbiIsInZhbHVlIjoiZXlKaGJHY2lPaUpTVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0lzSW10cFpDSTZJalp1VkhreVIyVldNRkkyUVhoZloxcGFNR3RrUVNKOS5leUpwYzNNaU9pSm9kSFJ3Y3pvdkwzUm9aUzFqY21WM0xXWnpibVF1ZFhNdVlYVjBhREF1WTI5dEx5SXNJbk4xWWlJNkltNUlZVkpFV2tNeVVtODJVWFp2TW1KdWFqVTRWMjExYTFJeVZVUklaRFJpUUdOc2FXVnVkSE1pTENKaGRXUWlPaUowYUdWamNtVjNMV0Z3YVNJc0ltbGhkQ0k2TVRZd01UQXdOemM0TXl3aVpYaHdJam94TmpBeE1EazBNVGd6TENKaGVuQWlPaUp1U0dGU1JGcERNbEp2TmxGMmJ6SmlibW8xT0ZkdGRXdFNNbFZFU0dRMFlpSXNJbk5qYjNCbElqb2lkbWxsZHpwaFkzUnZjbk1nWVdSa09tRmpkRzl5Y3lCbFpHbDBPbUZqZEc5eWN5QmtaV3hsZEdVNllXTjBiM0p6SUhacFpYYzZiVzkyYVdWeklHRmtaRHB0YjNacFpYTWdaV1JwZERwdGIzWnBaWE1nWkdWc1pYUmxPbTF2ZG1sbGN5SXNJbWQwZVNJNkltTnNhV1Z1ZEMxamNtVmtaVzUwYVdGc2N5SXNJbkJsY20xcGMzTnBiMjV6SWpwYkluWnBaWGM2WVdOMGIzSnpJaXdpWVdSa09tRmpkRzl5Y3lJc0ltVmthWFE2WVdOMGIzSnpJaXdpWkdWc1pYUmxPbUZqZEc5eWN5SXNJblpwWlhjNmJXOTJhV1Z6SWl3aVlXUmtPbTF2ZG1sbGN5SXNJbVZrYVhRNmJXOTJhV1Z6SWl3aVpHVnNaWFJsT20xdmRtbGxjeUpkZlEuSDBEWURyS2tya0pVUDZzVUlKa2lvTEVJcFpfd1NBSVdLVUN0aERoYnlaTHlxSzFmd0ZhTkJ2dlNUZ2tMREdtbmp2OVBONTVFSnQ4akxvQUdKdkcxYWdzak9LQlgzNEFBMEVGYk9oS2I5cHZXMnRtbVl2Q3pHYlN4SVJ3SEprM2pYLTFDT0lQa3loUjltU0ZaNndUTDhWVjBYLVB4RXFTUkhHWms4WlFtM3lib1Z2dVVNalBZTHBZdzhkb0lpTXhPLVBoWG9ULXNudUlfX3RvSWlOS1Y2M00tTHhnckM2Y04tcFFkMmZIREI0OFBuM0JkYlVtYnRnbUYwOGRCU3hscEEtcWFXc1RMUE85V2FEWTJ6MDAyOU92UkR5WHFuVkNndU1sX0Jnc2hTV0xGM0UyRmtxWHQyRlBUNTVaZkN4MzF1T2p2UDl2SVVVVFc1MGNlTTZaazhBIiwiZW5hYmxlZCI6dHJ1ZX1d)
+
+You can also follow along with the published web version of the API documentation. From there you can easily import to your own postman.
+
+<prev><code>
+[https://documenter.getpostman.com/view/121249/TVKHTaKr](https://documenter.getpostman.com/view/121249/TVKHTaKr)
+</code></prev>
+
+After logging in the application you can "Copy access token to clipboard" from the welcome page and then change the [environment variables](https://learning.postman.com/docs/sending-requests/variables/) within Postman:
 
 - `host`: The API address. For production set the value to `https://thecrew-app.herokuapp.com` or in development set `http://127.0.0.1:5000`
 - `token`: The [authentication](#Authentication) required to send requests
+
+Now you have 10 hours to send requests to the API until it gets expired, then you'll need to request another token.
 
 ## API Reference
 
@@ -121,12 +135,6 @@ You can check out the complete API Reference by using the Swagger documentation
 The TheCrew API uses JSON Web Token (JWT) to authenticate requests.
 
 Users need to authenticate via bearer auth (e.g., for a cross-origin request), use `-H "Authorization: Bearer token`.
-
-Using Postman within the [thecrew-api-backend.postman_collection.json](thecrew-api-backend.postman_collection.json) Postman collections there's a **Get Token** request that you'll have to send in order to have a token to follow along with all requests to the API.
-
-After sending the **Get Token** request, within the body response copy the giant sequence of characters from the key `access_token` and update the value of the `token` [environment variable](https://learning.postman.com/docs/sending-requests/variables/) created in Postman.
-
-Now you have 10 hours to send requests to the API until it gets expired, then you'll need to request another token.
 
 ### Errors
 

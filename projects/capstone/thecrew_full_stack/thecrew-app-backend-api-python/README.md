@@ -75,7 +75,13 @@ FLASK_ENV=development
 FLASK_DEBUG=True
 ```
 
-Now run the application
+Create the local database and execute the migrations:
+
+```bash
+flask deploy
+```
+
+Now run the application:
 
 ```bash
 flask run
